@@ -1,0 +1,37 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/stepeasy",
+    "crates/stepeasy-core",
+    "crates/stepeasy-capture",
+    "crates/stepeasy-ui",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/gabrielahlert/stepeasy"
+rust-version = "1.80"
+
+[workspace.dependencies]
+stepeasy-core = { path = "crates/stepeasy-core" }
+stepeasy-capture = { path = "crates/stepeasy-capture" }
+stepeasy-ui = { path = "crates/stepeasy-ui" }
+
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+crossbeam-channel = "0.5"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+strip = true

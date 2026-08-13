@@ -1,0 +1,13 @@
+/target
+**/*.rs.bk
+*.pdb
+
+# Gravações e exports gerados em testes locais
+/samples
+*.stepeasy
+
+# Editores
+.vscode/
+.idea/
+*.swp
+.DS_Store
