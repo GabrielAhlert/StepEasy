@@ -1,0 +1,17 @@
+[package]
+name = "stepeasy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Gravador de passo a passo local, open source e multiplataforma"
+
+[[bin]]
+name = "stepeasy"
+path = "src/main.rs"
+
+[dependencies]
+stepeasy-ui.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

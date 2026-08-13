@@ -12,7 +12,7 @@ pub type MonitorId = String;
 
 /// O que capturar a cada passo. Escolhido antes de gravar e mantido durante
 /// toda a gravação.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "mode", rename_all = "snake_case")]
 pub enum CaptureScope {
     /// Canvas virtual inteiro, todos os monitores lado a lado.
@@ -20,17 +20,12 @@ pub enum CaptureScope {
     /// Um monitor fixo, escolhido pelo usuário.
     Monitor { id: MonitorId },
     /// Segue o monitor onde o clique aconteceu.
+    #[default]
     MonitorUnderCursor,
     /// Apenas a janela em foco, recortada.
     ActiveWindow,
     /// Retângulo fixo definido pelo usuário.
     Region { rect: Rect },
-}
-
-impl Default for CaptureScope {
-    fn default() -> Self {
-        Self::MonitorUnderCursor
-    }
 }
 
 impl CaptureScope {
@@ -58,7 +53,7 @@ impl CaptureScope {
 }
 
 /// Descrição de um monitor conectado.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MonitorInfo {
     pub id: MonitorId,
     /// Nome amigável para a UI (ex.: "Tela 1 — 2560×1440").
