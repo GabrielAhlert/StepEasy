@@ -1,0 +1,30 @@
+[package]
+name = "stepeasy-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Interface egui do StepEasy"
+
+[dependencies]
+stepeasy-core.workspace = true
+stepeasy-capture.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+image.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+eframe = { version = "0.36", default-features = false, features = [
+    "default_fonts",
+    "glow",
+    "wayland",
+    "x11",
+    "persistence",
+] }
+egui = "0.36"
+egui_extras = { version = "0.36", features = ["image"] }
+egui_dnd = "0.17"
+rfd = "0.17"
+crossbeam-channel.workspace = true
