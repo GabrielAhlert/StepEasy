@@ -42,23 +42,7 @@ jobs:
       # apodreça antes do suporte chegar de verdade.
       - name: Dependências de sistema (Linux)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libgtk-3-dev \
-            libxkbcommon-dev \
-            libwayland-dev \
-            libx11-dev \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxi-dev \
-            libgl1-mesa-dev \
-            libxcb1-dev \
-            libxcb-randr0-dev \
-            libdbus-1-dev \
-            libpipewire-0.3-dev \
-            libclang-dev \
-            pkg-config
+        uses: ./.github/actions/deps-linux
 
       # Formatação é a mesma nos dois sistemas; conferir uma vez basta.
       - name: Formatação

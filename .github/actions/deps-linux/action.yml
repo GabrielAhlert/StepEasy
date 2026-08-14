@@ -1,0 +1,29 @@
+name: Dependências de sistema (Linux)
+description: >
+  Instala o que o workspace precisa para compilar no Linux. Fica numa ação
+  composta porque CI e release usam a mesma lista, e duas cópias divergiriam.
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          pkg-config \
+          libgtk-3-dev \
+          libxkbcommon-dev \
+          libwayland-dev \
+          libx11-dev \
+          libxcursor-dev \
+          libxrandr-dev \
+          libxi-dev \
+          libgl1-mesa-dev \
+          libegl1-mesa-dev \
+          libgbm-dev \
+          libdrm-dev \
+          libxcb1-dev \
+          libxcb-randr0-dev \
+          libdbus-1-dev \
+          libpipewire-0.3-dev \
+          libclang-dev

@@ -11,7 +11,8 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Tag a publicar (ex.: v0.1.0)
+        # Entre aspas: um ": " solto dentro do texto faria o YAML virar mapa.
+        description: "Tag a publicar, por exemplo v0.1.0"
         required: true
 
 env:
@@ -44,23 +45,7 @@ jobs:
 
       - name: Dependências de sistema (Linux)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libgtk-3-dev \
-            libxkbcommon-dev \
-            libwayland-dev \
-            libx11-dev \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxi-dev \
-            libgl1-mesa-dev \
-            libxcb1-dev \
-            libxcb-randr0-dev \
-            libdbus-1-dev \
-            libpipewire-0.3-dev \
-            libclang-dev \
-            pkg-config
+        uses: ./.github/actions/deps-linux
 
       - name: Compilar
         run: cargo build --release -p stepeasy
