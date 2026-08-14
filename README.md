@@ -9,11 +9,15 @@ O PSR foi descontinuado, exporta só MHTML e não deixa editar nada depois de gr
 
 ## Instalação
 
-Baixe o `.zip` da [última release](https://github.com/GabrielAhlert/StepEasy/releases),
-extraia e rode `stepeasy.exe`. Não há instalador nem dependência a instalar.
+Na [última release](https://github.com/GabrielAhlert/StepEasy/releases) há duas formas:
 
-O Windows costuma mostrar um aviso do SmartScreen na primeira execução, porque o
-executável não é assinado — em "Mais informações", "Executar assim mesmo".
+- **`stepeasy-<versão>-setup.exe`** — instalador. Instala só para o seu usuário,
+  em `%LOCALAPPDATA%\Programs`, sem pedir administrador. Cria atalho no menu
+  Iniciar e, se você quiser, associa os arquivos `.stepeasy`.
+- **`stepeasy-windows-x86_64.zip`** — portátil. Extraia e rode; não instala nada.
+
+O Windows mostra um aviso do SmartScreen na primeira execução, porque o
+executável ainda não é assinado — em "Mais informações", "Executar assim mesmo".
 
 ## Princípios
 
@@ -104,6 +108,17 @@ rasterizador de SVG. Quando o logo mudar, regenere:
 ```bash
 cargo run -p stepeasy --example gerar_icones
 ```
+
+O instalador é um script do [Inno Setup 6](https://jrsoftware.org/isinfo.php) em
+`installer/stepeasy.iss`. Para gerá-lo na sua máquina, depois de um build de
+release:
+
+```bash
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=0.1.0 installer\stepeasy.iss
+```
+
+A saída vai para `dist/`. No CI a versão vem da tag, então o instalador nunca
+discorda dela.
 
 ## Licença
 
