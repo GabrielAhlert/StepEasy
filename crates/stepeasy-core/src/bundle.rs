@@ -36,6 +36,17 @@ pub fn thumb_path(index: u32) -> String {
     format!("thumbs/step-{index:04}.jpg")
 }
 
+/// Extrai o número de um caminho gerado por [`image_path`] ou [`thumb_path`].
+///
+/// É o que permite continuar uma gravação sem sobrescrever as imagens que já
+/// estão no pacote: basta continuar a numeração de onde ela parou.
+pub fn index_from_path(path: &str) -> Option<u32> {
+    let arquivo = path.rsplit('/').next()?;
+    let resto = arquivo.strip_prefix("step-")?;
+    let digitos: String = resto.chars().take_while(char::is_ascii_digit).collect();
+    digitos.parse().ok()
+}
+
 /// Leitor de um pacote aberto. Mantém o zip aberto para carregar imagens sob
 /// demanda em vez de trazer a gravação inteira para a memória.
 pub struct BundleReader<R: Read + Seek> {
@@ -205,5 +216,13 @@ mod tests {
     fn caminhos_sao_zero_padded() {
         assert_eq!(image_path(7), "images/step-0007.png");
         assert_eq!(thumb_path(1234), "thumbs/step-1234.jpg");
+    }
+
+    #[test]
+    fn indice_e_lido_de_volta_do_caminho() {
+        assert_eq!(index_from_path(&image_path(7)), Some(7));
+        assert_eq!(index_from_path(&thumb_path(1234)), Some(1234));
+        assert_eq!(index_from_path("manifest.json"), None);
+        assert_eq!(index_from_path("images/outro.png"), None);
     }
 }

@@ -72,6 +72,19 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
                         if ui.button("Abrir").on_hover_text("Ctrl+O").clicked() {
                             app.open_dialog();
                         }
+
+                        // Fica ao lado de Abrir porque é aqui que o usuário
+                        // está depois de parar de gravar e revisar os passos.
+                        if app.can_continue_recording()
+                            && ui
+                                .button("Continuar gravando")
+                                .on_hover_text(
+                                    "Acrescenta passos novos ao fim desta gravação",
+                                )
+                                .clicked()
+                        {
+                            app.continue_recording(&ctx);
+                        }
                     });
                 });
             });

@@ -314,14 +314,49 @@ pub enum RecorderMessage {
     UpgradeLast { kind: StepKind, caption: String },
     /// O usuário pressionou o atalho de parada.
     StopRequested,
+    /// A gravação passou a pausada (`true`) ou voltou a gravar (`false`).
+    Paused(bool),
     Error(String),
     Stopped,
+}
+
+/// Como iniciar uma gravação.
+#[derive(Debug, Clone)]
+pub struct RecorderConfig {
+    pub scope: CaptureScope,
+    /// Combinação que encerra a gravação.
+    pub stop_combo: String,
+    /// Combinação que alterna entre pausado e gravando.
+    pub pause_combo: String,
+    /// Primeiro número usado para nomear as imagens.
+    ///
+    /// Ao continuar uma gravação isto vem de
+    /// [`Recording::next_image_index`](stepeasy_core::Recording::next_image_index),
+    /// senão as capturas novas sobrescreveriam as antigas dentro do pacote.
+    pub first_image_index: u32,
+}
+
+impl RecorderConfig {
+    pub fn new(scope: CaptureScope, stop_combo: impl Into<String>, pause_combo: impl Into<String>) -> Self {
+        Self {
+            scope,
+            stop_combo: stop_combo.into(),
+            pause_combo: pause_combo.into(),
+            first_image_index: 1,
+        }
+    }
+
+    pub fn starting_at(mut self, first_image_index: u32) -> Self {
+        self.first_image_index = first_image_index.max(1);
+        self
+    }
 }
 
 /// Gravação em andamento.
 pub struct Recorder {
     running: Arc<AtomicBool>,
     stop_requested: Arc<AtomicBool>,
+    paused: Arc<AtomicBool>,
     input_stop: Option<Box<dyn FnOnce() + Send>>,
     pub messages: Receiver<RecorderMessage>,
 }
@@ -329,14 +364,10 @@ pub struct Recorder {
 impl Recorder {
     /// Instala os ganchos e inicia a thread que monta os passos.
     ///
-    /// `stop_combo` é a combinação que encerra a gravação. Ela é filtrada do
-    /// fluxo de eventos, então não vira passo — e, por ser tratada aqui e não
-    /// pela janela, funciona com o aplicativo minimizado.
-    pub fn start(
-        mut platform: Platform,
-        scope: CaptureScope,
-        stop_combo: impl Into<String>,
-    ) -> Result<Self> {
+    /// Os atalhos de parar e pausar são filtrados do fluxo de eventos, então
+    /// não viram passo — e, por serem tratados aqui e não pela janela,
+    /// funcionam com o aplicativo minimizado.
+    pub fn start(mut platform: Platform, config: RecorderConfig) -> Result<Self> {
         let (raw_tx, raw_rx) = crossbeam_channel::unbounded::<RawEvent>();
         let (msg_tx, msg_rx) = crossbeam_channel::unbounded::<RecorderMessage>();
 
@@ -344,6 +375,7 @@ impl Recorder {
 
         let running = Arc::new(AtomicBool::new(true));
         let stop_requested = Arc::new(AtomicBool::new(false));
+        let paused = Arc::new(AtomicBool::new(false));
 
         let Platform {
             mut input,
@@ -354,8 +386,8 @@ impl Recorder {
         let ctx = WorkerContext {
             running: running.clone(),
             stop_requested: stop_requested.clone(),
-            stop_combo: stop_combo.into(),
-            scope,
+            paused: paused.clone(),
+            config,
             screen,
             probe,
         };
@@ -368,6 +400,7 @@ impl Recorder {
         Ok(Self {
             running,
             stop_requested,
+            paused,
             input_stop: Some(Box::new(move || input.stop())),
             messages: msg_rx,
         })
@@ -376,6 +409,17 @@ impl Recorder {
     /// `true` depois que o usuário pressiona o atalho de parada.
     pub fn stop_requested(&self) -> bool {
         self.stop_requested.load(Ordering::SeqCst)
+    }
+
+    /// `true` enquanto a gravação está pausada.
+    pub fn is_paused(&self) -> bool {
+        self.paused.load(Ordering::SeqCst)
+    }
+
+    /// Alterna pausado/gravando a partir da interface (o atalho faz o mesmo
+    /// caminho, mas de dentro da thread de captura).
+    pub fn toggle_pause(&self) {
+        self.paused.fetch_xor(true, Ordering::SeqCst);
     }
 
     /// Para os ganchos e a thread. Os passos já emitidos continuam no canal.
@@ -396,8 +440,8 @@ impl Drop for Recorder {
 struct WorkerContext {
     running: Arc<AtomicBool>,
     stop_requested: Arc<AtomicBool>,
-    stop_combo: String,
-    scope: CaptureScope,
+    paused: Arc<AtomicBool>,
+    config: RecorderConfig,
     screen: Box<dyn crate::ScreenGrabber>,
     probe: Box<dyn crate::UiProbe>,
 }
@@ -406,15 +450,23 @@ fn worker(ctx: WorkerContext, raw_rx: Receiver<RawEvent>, msg_tx: Sender<Recorde
     let WorkerContext {
         running,
         stop_requested,
-        stop_combo,
-        scope,
+        paused,
+        config,
         screen,
         probe,
     } = ctx;
+    let RecorderConfig {
+        scope,
+        stop_combo,
+        pause_combo,
+        first_image_index,
+    } = config;
 
     let mut grouper = Grouper::new();
     let mut held: Option<(crate::Frame, Option<stepeasy_core::UiTarget>)> = None;
-    let mut counter: u32 = 0;
+    // O contador aponta para o próximo número a usar; `Emit` incrementa antes
+    // de nomear, então ele começa um abaixo do primeiro índice livre.
+    let mut counter: u32 = first_image_index.saturating_sub(1);
 
     let apply = |actions: Vec<Action>,
                  held: &mut Option<(crate::Frame, Option<stepeasy_core::UiTarget>)>,
@@ -460,15 +512,35 @@ fn worker(ctx: WorkerContext, raw_rx: Receiver<RawEvent>, msg_tx: Sender<Recorde
     while running.load(Ordering::SeqCst) {
         match raw_rx.recv_timeout(Duration::from_millis(120)) {
             Ok(event) => {
-                if is_stop_combo(&event, &stop_combo) {
+                if combo_igual(&event, &stop_combo) {
                     stop_requested.store(true, Ordering::SeqCst);
                     let _ = msg_tx.send(RecorderMessage::StopRequested);
                     break;
                 }
+
+                if combo_igual(&event, &pause_combo) {
+                    let agora_pausado = !paused.fetch_xor(true, Ordering::SeqCst);
+                    if agora_pausado {
+                        // Fecha o que estiver aberto: a palavra digitada até
+                        // aqui vira passo agora, e não colada no que o usuário
+                        // digitar depois de retomar.
+                        apply(grouper.finish(), &mut held, &mut counter);
+                    }
+                    let _ = msg_tx.send(RecorderMessage::Paused(agora_pausado));
+                    continue;
+                }
+
+                if paused.load(Ordering::SeqCst) {
+                    continue;
+                }
+
                 let actions = grouper.push(&event);
                 apply(actions, &mut held, &mut counter);
             }
             Err(crossbeam_channel::RecvTimeoutError::Timeout) => {
+                if paused.load(Ordering::SeqCst) {
+                    continue;
+                }
                 let actions = grouper.tick(Utc::now());
                 apply(actions, &mut held, &mut counter);
             }
@@ -481,9 +553,24 @@ fn worker(ctx: WorkerContext, raw_rx: Receiver<RawEvent>, msg_tx: Sender<Recorde
     let _ = msg_tx.send(RecorderMessage::Stopped);
 }
 
-/// `true` quando o evento é exatamente o atalho de parada.
-fn is_stop_combo(event: &RawEvent, stop_combo: &str) -> bool {
-    matches!(event, RawEvent::Key { combo, .. } if combo.eq_ignore_ascii_case(stop_combo))
+/// `true` quando o evento é o atalho indicado.
+///
+/// Além do nome bater, o evento precisa ter modificador ou ser uma tecla que
+/// não produz texto. Sem essa condição, um atalho configurado como uma letra
+/// solta faria a digitação normal do usuário encerrar a gravação.
+fn combo_igual(event: &RawEvent, alvo: &str) -> bool {
+    if alvo.is_empty() {
+        return false;
+    }
+    match event {
+        RawEvent::Key {
+            combo,
+            with_modifier,
+            text,
+            ..
+        } => combo.eq_ignore_ascii_case(alvo) && (*with_modifier || text.is_none()),
+        _ => false,
+    }
 }
 
 /// Monta o passo final: legenda, PNG e miniatura.
@@ -763,6 +850,38 @@ mod tests {
             emitidos(&acoes),
             vec![StepKind::Type { text: "a".into() }]
         );
+    }
+
+    #[test]
+    fn atalhos_sao_reconhecidos_sem_diferenciar_caixa() {
+        let evento = atalho("Ctrl+Shift+F9", 0);
+        assert!(combo_igual(&evento, "ctrl+shift+f9"));
+        assert!(!combo_igual(&evento, "Ctrl+Shift+F10"));
+        // Atalho vazio nunca casa, senão qualquer tecla pararia a gravação.
+        assert!(!combo_igual(&evento, ""));
+
+        // Uma letra digitada não dispara atalho, mesmo que alguém configure o
+        // atalho como essa letra.
+        assert!(!combo_igual(&tecla("a", 0), "A"));
+
+        // Já uma tecla que não produz texto pode ser atalho sozinha.
+        let f9 = RawEvent::Key {
+            vk: 0,
+            text: None,
+            combo: "F9".into(),
+            with_modifier: false,
+            at: Point::new(0, 0),
+            time: t(0),
+        };
+        assert!(combo_igual(&f9, "F9"));
+    }
+
+    #[test]
+    fn config_nunca_comeca_a_numeracao_no_zero() {
+        let config = RecorderConfig::new(CaptureScope::default(), "Ctrl+F9", "Ctrl+F10");
+        assert_eq!(config.first_image_index, 1);
+        assert_eq!(config.clone().starting_at(0).first_image_index, 1);
+        assert_eq!(config.starting_at(12).first_image_index, 12);
     }
 
     #[test]
