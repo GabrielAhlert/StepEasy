@@ -5,6 +5,12 @@ name: Release
 #     git tag v0.1.0 && git push origin v0.1.0
 #
 # Também dá para rodar à mão pela aba Actions, informando a tag.
+#
+# Só publica binário de Windows: é o único sistema onde a captura funciona de
+# verdade. O Linux continua sendo compilado no CI — o que garante que o `stub`
+# de plataforma não apodreça — mas um pacote que abre a janela e não grava nada
+# seria promessa falsa. Quando o suporte chegar, basta devolver o Linux à
+# matriz abaixo e a etapa de dependências (`./.github/actions/deps-linux`).
 on:
   push:
     tags: ['v*']
@@ -30,10 +36,6 @@ jobs:
             nome: Windows
             pacote: stepeasy-windows-x86_64
             binario: stepeasy.exe
-          - os: ubuntu-latest
-            nome: Linux
-            pacote: stepeasy-linux-x86_64
-            binario: stepeasy
 
     steps:
       - uses: actions/checkout@v4
@@ -42,10 +44,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
-
-      - name: Dependências de sistema (Linux)
-        if: runner.os == 'Linux'
-        uses: ./.github/actions/deps-linux
 
       - name: Compilar
         run: cargo build --release -p stepeasy
@@ -57,21 +55,14 @@ jobs:
           cp "target/release/${{ matrix.binario }}" pacote/
           cp README.md LICENSE pacote/
 
-      - name: Compactar (Windows)
-        if: runner.os == 'Windows'
+      - name: Compactar
         run: Compress-Archive -Path pacote\* -DestinationPath ${{ matrix.pacote }}.zip
-
-      - name: Compactar (Linux)
-        if: runner.os == 'Linux'
-        run: tar -czf ${{ matrix.pacote }}.tar.gz -C pacote .
 
       - name: Guardar o artefato
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.pacote }}
-          path: |
-            *.zip
-            *.tar.gz
+          path: '*.zip'
           if-no-files-found: error
 
   publicar:
@@ -87,6 +78,7 @@ jobs:
           path: artefatos
           merge-multiple: true
 
+      # Rascunho de propósito: publicar é decisão de quem mantém, não do CI.
       - name: Criar a release
         uses: softprops/action-gh-release@v2
         with:

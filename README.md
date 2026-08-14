@@ -4,7 +4,16 @@ Gravador de passo a passo local, open source e multiplataforma, escrito em Rust 
 
 O PSR foi descontinuado, exporta só MHTML e não deixa editar nada depois de gravar. O StepEasy grava a interação (clique/tecla → screenshot + descrição) e, principalmente, deixa **editar a gravação depois**: reordenar, excluir, mesclar e reescrever passos antes de exportar.
 
-> Status: **em desenvolvimento** (pré-v0.1). Ainda não há release utilizável.
+> Status: **v0.1** — utilizável no Windows. Linux e macOS abrem e editam
+> gravações, mas ainda não capturam.
+
+## Instalação
+
+Baixe o `.zip` da [última release](https://github.com/GabrielAhlert/StepEasy/releases),
+extraia e rode `stepeasy.exe`. Não há instalador nem dependência a instalar.
+
+O Windows costuma mostrar um aviso do SmartScreen na primeira execução, porque o
+executável não é assinado — em "Mais informações", "Executar assim mesmo".
 
 ## Princípios
 
@@ -52,7 +61,7 @@ No editor elas são desenhadas por cima da imagem, então apagar uma seta não c
 
 ## Roadmap
 
-**v0.1 (em andamento)** — captura no Windows, editor com reordenação/edição/mesclagem e undo/redo, anotações, formato `.stepeasy`, export Markdown e HTML.
+**v0.1** — captura no Windows, editor com reordenação/edição/mesclagem e undo/redo, anotações, autosave com recuperação, formato `.stepeasy`, export Markdown e HTML.
 
 **Depois** — Linux (AT-SPI) e macOS (AX API), redação automática de dados sensíveis, export PDF/DOCX, vídeo/GIF, diff entre gravações, export para Playwright.
 
