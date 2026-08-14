@@ -322,7 +322,8 @@ fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut Ve
     // seta não deve custar qualidade da captura. Quem grava nos pixels é o
     // export, em `stepeasy_core::render::compose`.
     let painter = ui.painter_at(resposta.rect);
-    annotate::preview(app, &painter, mapa, &anotacoes, palette);
+    let ctx = ui.ctx().clone();
+    annotate::preview(app, &ctx, &painter, mapa, &path, &anotacoes, palette);
 
     if let Some((cx, cy)) = cursor {
         let centro = resposta.rect.min + Vec2::new(cx as f32 * escala, cy as f32 * escala);

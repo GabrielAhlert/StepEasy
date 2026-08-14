@@ -60,6 +60,35 @@ pub fn with_click_marker(png: &[u8], x: u32, y: u32) -> Result<Vec<u8>> {
     compose(png, Some((x, y)), &[])
 }
 
+/// Recorta a região e devolve **só ela**, já borrada.
+///
+/// É o que o editor usa para mostrar o borrão de verdade na tela em vez de uma
+/// tarja: desfocar a captura inteira a cada quadro seria caro, mas desfocar um
+/// pedaço uma vez por alteração é barato.
+///
+/// O desfoque só enxerga os pixels do próprio recorte, igual ao de [`compose`],
+/// então a prévia e o export dão o mesmo resultado.
+pub fn blurred_region(png: &[u8], rect: Rect, radius: f32) -> Result<RgbaImage> {
+    let img = image::load_from_memory(png)?.to_rgba8();
+    let limite = Rect::new(0, 0, img.width(), img.height());
+    let Some(area) = rect.intersect(&limite) else {
+        return Ok(RgbaImage::new(1, 1));
+    };
+
+    let mut recorte = image::imageops::crop_imm(
+        &img,
+        area.x as u32,
+        area.y as u32,
+        area.width,
+        area.height,
+    )
+    .to_image();
+
+    let inteiro = Rect::new(0, 0, recorte.width(), recorte.height());
+    blur_region(&mut recorte, inteiro, radius);
+    Ok(recorte)
+}
+
 /// Miniatura com lado maior igual a `max_side`, em JPEG.
 pub fn thumbnail(png: &[u8], max_side: u32, quality: u8) -> Result<Vec<u8>> {
     let img = image::load_from_memory(png)?;
@@ -517,6 +546,40 @@ mod tests {
 
         // Nada foi pintado bem longe do ponto de origem.
         assert_eq!(img.get_pixel(195, 55)[0], 20);
+    }
+
+    #[test]
+    fn regiao_borrada_tem_o_tamanho_do_recorte_e_perde_o_contraste() {
+        let mut base = RgbaImage::new(80, 80);
+        for (x, y, px) in base.enumerate_pixels_mut() {
+            let claro = (x / 2 + y / 2) % 2 == 0;
+            *px = if claro {
+                Rgba([255, 255, 255, 255])
+            } else {
+                Rgba([0, 0, 0, 255])
+            };
+        }
+        let png = encode_png(&base).unwrap();
+
+        let recorte = blurred_region(&png, Rect::new(20, 20, 40, 40), 6.0).unwrap();
+        assert_eq!((recorte.width(), recorte.height()), (40, 40));
+
+        let meio = recorte.get_pixel(20, 20)[0] as i32;
+        assert!((meio - 128).abs() < 40, "esperava cinza, veio {meio}");
+    }
+
+    #[test]
+    fn regiao_borrada_fora_da_imagem_nao_quebra() {
+        let recorte = blurred_region(&imagem_lisa(40, 40), Rect::new(500, 500, 20, 20), 4.0)
+            .unwrap();
+        assert_eq!((recorte.width(), recorte.height()), (1, 1));
+    }
+
+    #[test]
+    fn regiao_borrada_e_recortada_ao_que_cabe_na_imagem() {
+        let recorte =
+            blurred_region(&imagem_lisa(40, 40), Rect::new(30, 30, 40, 40), 4.0).unwrap();
+        assert_eq!((recorte.width(), recorte.height()), (10, 10));
     }
 
     #[test]

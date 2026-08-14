@@ -316,18 +316,32 @@ fn finalizar(app: &App, tool: Tool, rascunho: Rascunho) -> Option<Annotation> {
 
 /// Desenha as anotações e o rascunho em cima da imagem.
 ///
-/// É prévia, não é o resultado final: o borrão aparece como uma tarja hachurada
-/// em vez de desfocar de verdade, porque desfocar exigiria reprocessar a
-/// textura a cada quadro. O que sai no export é o desfoque de verdade.
+/// O borrão já aplicado aparece **desfocado de verdade**: a região é recortada,
+/// borrada uma vez e guardada como textura. Só enquanto o arrasto está em
+/// andamento é que ele vira uma tarja — aí o retângulo muda a cada quadro e
+/// recalcular o desfoque junto travaria o gesto.
 pub fn preview(
-    app: &App,
+    app: &mut App,
+    ctx: &egui::Context,
     painter: &egui::Painter,
     mapa: Mapa,
+    imagem: &str,
     anotacoes: &[Annotation],
     palette: &Palette,
 ) {
     for (indice, annotation) in anotacoes.iter().enumerate() {
-        desenhar(painter, mapa, annotation);
+        match annotation {
+            Annotation::Blur { rect, radius } => {
+                let alvo = Borrao {
+                    imagem,
+                    indice,
+                    rect: *rect,
+                    radius: *radius,
+                };
+                desenhar_borrao(app, ctx, painter, mapa, alvo);
+            }
+            outra => desenhar(painter, mapa, outra),
+        }
 
         if app.annot.selecionada == Some(indice) {
             let caixa = mapa.retangulo_na_tela(annotation.bounds()).expand(4.0);
@@ -343,6 +357,74 @@ pub fn preview(
     if let Some(rascunho) = app.annot.rascunho {
         if let Some(previa) = finalizar(app, app.annot.tool, rascunho) {
             desenhar(painter, mapa, &previa);
+        }
+    }
+}
+
+/// O borrão a desenhar e onde encontrar os pixels dele.
+struct Borrao<'a> {
+    imagem: &'a str,
+    indice: usize,
+    rect: Rect,
+    radius: f32,
+}
+
+/// Desenha a região já borrada, calculando-a na primeira vez.
+fn desenhar_borrao(
+    app: &mut App,
+    ctx: &egui::Context,
+    painter: &egui::Painter,
+    mapa: Mapa,
+    alvo: Borrao<'_>,
+) {
+    let Borrao {
+        imagem,
+        indice,
+        rect,
+        radius,
+    } = alvo;
+    let caixa = mapa.retangulo_na_tela(rect);
+    let prefixo = format!("blur:{imagem}:{indice}:");
+    let chave = format!(
+        "{prefixo}{},{},{}x{},{}",
+        rect.x, rect.y, rect.width, rect.height, radius as u32
+    );
+
+    if !app.textures.contains(&chave) {
+        // Mexer na intensidade ou arrastar a anotação cria uma chave nova a
+        // cada quadro; a anterior desta mesma anotação já não serve.
+        app.textures.forget_prefix(&prefixo);
+    }
+
+    let png = app
+        .project
+        .as_mut()
+        .and_then(|p| p.blob_opt(imagem))
+        .map(<[u8]>::to_vec);
+
+    let textura = app.textures.get_or_build(ctx, &chave, || {
+        let png = png?;
+        let borrado = stepeasy_core::render::blurred_region(&png, rect, radius).ok()?;
+        let tamanho = [borrado.width() as usize, borrado.height() as usize];
+        Some(egui::ColorImage::from_rgba_unmultiplied(
+            tamanho,
+            borrado.as_raw(),
+        ))
+    });
+
+    match textura {
+        Some(textura) => {
+            painter.image(
+                textura.id(),
+                caixa,
+                EguiRect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                Color32::WHITE,
+            );
+        }
+        // Sem a imagem original não dá para borrar; ao menos não deixa passar
+        // o que deveria estar escondido.
+        None => {
+            painter.rect_filled(caixa, 0.0, Color32::from_black_alpha(220));
         }
     }
 }
@@ -385,21 +467,17 @@ fn desenhar(painter: &egui::Painter, mapa: Mapa, annotation: &Annotation) {
             }
         }
 
+        // Só o rascunho passa por aqui: a anotação já aplicada é desenhada
+        // desfocada de verdade, em `desenhar_borrao`.
         Annotation::Blur { rect, .. } => {
             let caixa = mapa.retangulo_na_tela(*rect);
-            painter.rect_filled(caixa, 0.0, Color32::from_black_alpha(170));
-            // Hachura diagonal para não confundir tarja com retângulo preto.
-            let passo = 8.0;
-            let mut x = caixa.left();
-            while x < caixa.right() + caixa.height() {
-                let a = Pos2::new(x, caixa.top());
-                let b = Pos2::new(x - caixa.height(), caixa.bottom());
-                painter.line_segment(
-                    [a.clamp(caixa.min, caixa.max), b.clamp(caixa.min, caixa.max)],
-                    Stroke::new(1.0, Color32::from_white_alpha(60)),
-                );
-                x += passo;
-            }
+            painter.rect_filled(caixa, 0.0, Color32::from_black_alpha(150));
+            painter.rect_stroke(
+                caixa,
+                0.0,
+                Stroke::new(1.0, Color32::from_white_alpha(140)),
+                egui::StrokeKind::Middle,
+            );
         }
 
         Annotation::Text {
