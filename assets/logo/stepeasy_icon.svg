@@ -1,0 +1,17 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <linearGradient id="mainGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" /> <!-- Sky Blue -->
+      <stop offset="100%" stop-color="#10B981" /> <!-- Emerald -->
+    </linearGradient>
+  </defs>
+
+  <rect width="200" height="200" fill="transparent" />
+  <!-- Botão de Play -->
+  <path d="M 35 125 L 35 165 L 70 145 Z" fill="url(#mainGrad)" stroke="url(#mainGrad)" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Degraus / Fluxo -->
+  <path d="M 68 145 L 90 145 L 90 95 L 130 95 L 130 45 L 150 45" fill="none" stroke="url(#mainGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Ponto de Gravação -->
+  <circle cx="170" cy="45" r="10" fill="#EF4444" />
+</svg>

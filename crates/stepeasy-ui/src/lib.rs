@@ -25,16 +25,37 @@ pub const ICONES: &[icons::Icon] = &[
 pub use icons::Icon;
 pub use theme::apply as aplicar_tema;
 
+/// Ícone da janela, gerado a partir de `assets/logo/stepeasy_icon.svg` pelo
+/// exemplo `gerar_icones`. Vai embutido para o binário não depender de arquivo
+/// nenhum ao lado dele.
+fn icone() -> Option<std::sync::Arc<egui::IconData>> {
+    const PNG: &[u8] = include_bytes!("../../../assets/icons/stepeasy-256.png");
+
+    match eframe::icon_data::from_png_bytes(PNG) {
+        Ok(icone) => Some(std::sync::Arc::new(icone)),
+        Err(err) => {
+            tracing::warn!("ícone da janela inválido: {err}");
+            None
+        }
+    }
+}
+
 /// Abre a janela do aplicativo. Só retorna quando o usuário fecha.
 ///
 /// `abrir` é uma gravação `.stepeasy` para carregar já no editor.
 pub fn run(abrir: Option<std::path::PathBuf>) -> anyhow::Result<()> {
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_title("StepEasy")
+        .with_inner_size([1180.0, 760.0])
+        .with_min_inner_size([900.0, 560.0])
+        .with_app_id("stepeasy");
+
+    if let Some(icone) = icone() {
+        viewport = viewport.with_icon(icone);
+    }
+
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_title("StepEasy")
-            .with_inner_size([1180.0, 760.0])
-            .with_min_inner_size([900.0, 560.0])
-            .with_app_id("stepeasy"),
+        viewport,
         ..Default::default()
     };
 
