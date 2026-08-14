@@ -1,0 +1,21 @@
+<svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <linearGradient id="mainGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" /> <!-- Sky Blue -->
+      <stop offset="100%" stop-color="#10B981" /> <!-- Emerald -->
+    </linearGradient>
+  </defs>
+
+  <!-- Ícone -->
+  <g transform="translate(20, 20) scale(0.8)">
+    <path d="M 35 125 L 35 165 L 70 145 Z" fill="url(#mainGrad)" stroke="url(#mainGrad)" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M 68 145 L 90 145 L 90 95 L 130 95 L 130 45 L 150 45" fill="none" stroke="url(#mainGrad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="170" cy="45" r="10" fill="#EF4444" />
+  </g>
+  <!-- Texto -->
+  <g transform="translate(180, 115)">
+    <text font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="#1E293B">Step<tspan fill="url(#mainGrad)">Easy</tspan></text>
+    <text x="5" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500" fill="#64748B" letter-spacing="1.5">GRAVAÇÃO DE TELA DESCOMPLICADA</text>
+  </g>
+</svg>

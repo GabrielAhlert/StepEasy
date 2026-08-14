@@ -1,4 +1,4 @@
-# StepEasy
+<img src="assets/logo/stepeasy_logo_horizontal.svg" alt="StepEasy" width="380">
 
 Gravador de passo a passo local, open source e multiplataforma, escrito em Rust — a evolução do **Gravador de Passos (PSR)** do Windows.
 
@@ -84,6 +84,16 @@ crates/
   stepeasy-capture/  hooks de entrada, screenshot e acessibilidade por plataforma
   stepeasy-ui/       interface egui (gravador + editor)
   stepeasy/          binário
+assets/
+  logo/              SVGs da marca
+  icons/             PNG e ICO gerados a partir do logo
+```
+
+Os ícones ficam versionados para compilar o StepEasy não depender de um
+rasterizador de SVG. Quando o logo mudar, regenere:
+
+```bash
+cargo run -p stepeasy --example gerar_icones
 ```
 
 ## Licença
