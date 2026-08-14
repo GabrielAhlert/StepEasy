@@ -24,6 +24,19 @@ Escolhido antes de gravar:
 | Janela ativa | Só a janela em foco, recortada |
 | Região | Um retângulo fixo que você seleciona |
 
+## Durante a gravação
+
+| Atalho | O que faz |
+|---|---|
+| `Ctrl+Shift+F9` | Encerra a gravação |
+| `Ctrl+Shift+F10` | Pausa e retoma |
+
+Os dois funcionam com a janela minimizada: são tratados dentro do próprio fluxo
+de eventos capturados, e não pela janela do aplicativo.
+
+Uma gravação já aberta pode ser continuada — os passos novos entram no fim, sem
+apagar nem renumerar os que já existem. `Ctrl+Z` desfaz a continuação inteira.
+
 ## Anotações
 
 Sobre a captura de cada passo dá para desenhar:

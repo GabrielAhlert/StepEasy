@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use egui::{Key, KeyboardShortcut, Modifiers};
-use stepeasy_capture::session::{Recorder, RecorderMessage};
+use stepeasy_capture::session::{Recorder, RecorderConfig, RecorderMessage};
 use stepeasy_core::edit::History;
 use stepeasy_core::export::{self, Format};
 use stepeasy_core::scope::{CaptureScope, MonitorInfo};
@@ -18,6 +18,8 @@ use crate::{screens, theme};
 /// dentro do próprio fluxo de eventos capturados, então funciona sem depender
 /// de um registrador de atalho global.
 pub const STOP_HOTKEY: &str = "Ctrl+Shift+F9";
+/// Alterna entre pausado e gravando, pelas mesmas razões do atalho de parada.
+pub const PAUSE_HOTKEY: &str = "Ctrl+Shift+F10";
 
 const KEY_SAVE: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::S);
 const KEY_OPEN: KeyboardShortcut = KeyboardShortcut::new(Modifiers::CTRL, Key::O);
@@ -61,6 +63,8 @@ pub struct App {
     pub minimize_while_recording: bool,
     pub recorder: Option<Recorder>,
     pub recorded_steps: usize,
+    /// `true` quando a gravação atual está acrescentando a uma existente.
+    pub continuing: bool,
 }
 
 impl App {
@@ -104,6 +108,7 @@ impl App {
             minimize_while_recording: true,
             recorder: None,
             recorded_steps: 0,
+            continuing: false,
         }
     }
 
@@ -113,7 +118,26 @@ impl App {
 
     // ----- gravação -------------------------------------------------------
 
+    /// `true` quando há uma gravação aberta à qual dá para acrescentar passos.
+    pub fn can_continue_recording(&self) -> bool {
+        self.project.is_some() && stepeasy_capture::is_supported() && !self.is_recording()
+    }
+
+    /// Começa uma gravação nova, descartando a que estiver aberta.
     pub fn start_recording(&mut self, ctx: &egui::Context) {
+        self.begin_recording(ctx, false);
+    }
+
+    /// Acrescenta passos ao fim da gravação já aberta.
+    pub fn continue_recording(&mut self, ctx: &egui::Context) {
+        if self.project.is_none() {
+            self.start_recording(ctx);
+            return;
+        }
+        self.begin_recording(ctx, true);
+    }
+
+    fn begin_recording(&mut self, ctx: &egui::Context, continuar: bool) {
         if self.is_recording() {
             return;
         }
@@ -122,26 +146,51 @@ impl App {
                 .error("a gravação ainda não está disponível neste sistema operacional");
             return;
         }
-        if let Some(project) = &self.project {
-            if project.is_dirty() {
-                self.toasts
-                    .info("há alterações não salvas; elas serão substituídas pela nova gravação");
+        if !continuar {
+            if let Some(project) = &self.project {
+                if project.is_dirty() {
+                    self.toasts.info(
+                        "há alterações não salvas; elas serão substituídas pela nova gravação",
+                    );
+                }
             }
         }
 
-        let recording = Recording::new(nome_padrao(), self.scope.clone());
-        match Recorder::start(
-            stepeasy_capture::platform(),
-            self.scope.clone(),
-            STOP_HOTKEY,
-        ) {
+        // Continuar reaproveita a numeração das imagens de onde ela parou;
+        // recomeçar do 1 sobrescreveria as capturas que já estão no pacote.
+        let primeira_imagem = if continuar {
+            self.project
+                .as_ref()
+                .map_or(1, |p| p.recording.next_image_index())
+        } else {
+            1
+        };
+
+        let config = RecorderConfig::new(self.scope.clone(), STOP_HOTKEY, PAUSE_HOTKEY)
+            .starting_at(primeira_imagem);
+
+        match Recorder::start(stepeasy_capture::platform(), config) {
             Ok(recorder) => {
-                self.project = Some(Project::new(recording));
-                self.history.clear();
-                self.textures.clear();
-                self.selection.clear();
+                if continuar {
+                    // Um instantâneo vazio antes de acrescentar: assim um
+                    // Ctrl+Z depois devolve a gravação como ela estava.
+                    if let Some(project) = &mut self.project {
+                        self.history
+                            .edit(&mut project.recording, "Continuar gravação", |_| {});
+                    }
+                } else {
+                    self.project = Some(Project::new(Recording::new(
+                        nome_padrao(),
+                        self.scope.clone(),
+                    )));
+                    self.history.clear();
+                    self.textures.clear();
+                    self.selection.clear();
+                    self.focused = None;
+                }
+
                 self.annot.limpar();
-                self.focused = None;
+                self.continuing = continuar;
                 self.recorded_steps = 0;
                 self.recorder = Some(recorder);
 
@@ -151,6 +200,17 @@ impl App {
             }
             Err(err) => self.toasts.error(format!("não foi possível gravar: {err}")),
         }
+    }
+
+    /// Alterna entre pausado e gravando.
+    pub fn toggle_pause(&mut self) {
+        if let Some(recorder) = &self.recorder {
+            recorder.toggle_pause();
+        }
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.recorder.as_ref().is_some_and(|r| r.is_paused())
     }
 
     pub fn stop_recording(&mut self, ctx: &egui::Context) {
@@ -165,19 +225,38 @@ impl App {
         ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
         ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
 
+        let continuando = self.continuing;
+        self.continuing = false;
+
         if let Some(project) = &mut self.project {
             project.recording.reindex();
-            self.focused = project.recording.steps.first().map(|s| s.id);
+            // Continuar deixa o foco no primeiro passo novo, que é onde a
+            // atenção está; uma gravação nova começa do início.
+            let inicio = if continuando {
+                project
+                    .recording
+                    .steps
+                    .len()
+                    .saturating_sub(self.recorded_steps)
+            } else {
+                0
+            };
+            self.focused = project.recording.steps.get(inicio).map(|s| s.id);
         }
+        self.selection = self.focused.into_iter().collect();
         self.screen = Screen::Editor;
 
         let total = self.recorded_steps;
-        if total == 0 {
-            self.toasts
-                .info("nenhum passo foi capturado — nada aconteceu durante a gravação?");
-        } else {
-            self.toasts
-                .info(format!("{total} passo(s) capturado(s). Revise e salve."));
+        match (total, continuando) {
+            (0, _) => self
+                .toasts
+                .info("nenhum passo foi capturado — nada aconteceu durante a gravação?"),
+            (n, true) => self
+                .toasts
+                .info(format!("{n} passo(s) acrescentado(s) ao fim da gravação.")),
+            (n, false) => self
+                .toasts
+                .info(format!("{n} passo(s) capturado(s). Revise e salve.")),
         }
     }
 
@@ -192,6 +271,7 @@ impl App {
 
         let mut novos = 0usize;
         let mut erros: Vec<String> = Vec::new();
+        let mut avisos: Vec<String> = Vec::new();
 
         for message in messages.try_iter() {
             match message {
@@ -220,12 +300,24 @@ impl App {
                 // O pedido de parada é lido do sinalizador em `poll_recorder`,
                 // que é onde dá para mexer na janela.
                 RecorderMessage::StopRequested => {}
+                // A tela lê o estado direto do gravador a cada quadro; a
+                // mensagem existe para o aviso aparecer na hora.
+                RecorderMessage::Paused(pausado) => {
+                    avisos.push(if pausado {
+                        format!("gravação pausada — {PAUSE_HOTKEY} para retomar")
+                    } else {
+                        "gravação retomada".to_string()
+                    });
+                }
                 RecorderMessage::Error(err) => erros.push(err),
                 RecorderMessage::Stopped => {}
             }
         }
 
         self.recorded_steps += novos;
+        for aviso in avisos {
+            self.toasts.info(aviso);
+        }
         for err in erros {
             self.toasts.error(err);
         }

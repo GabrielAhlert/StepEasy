@@ -64,6 +64,20 @@ impl Recording {
         self.steps.iter().position(|s| s.id == id)
     }
 
+    /// Primeiro número livre para nomear imagens novas neste pacote.
+    ///
+    /// Continuar uma gravação precisa disso: reiniciar do 1 sobrescreveria as
+    /// capturas que já estão lá. Os nomes não têm relação com a ordem dos
+    /// passos — reordenar não renomeia nada.
+    pub fn next_image_index(&self) -> u32 {
+        self.steps
+            .iter()
+            .filter_map(|s| s.image.as_ref())
+            .filter_map(|i| crate::bundle::index_from_path(&i.path))
+            .max()
+            .map_or(1, |maior| maior + 1)
+    }
+
     /// Nome de arquivo sugerido, sem extensão.
     pub fn slug(&self) -> String {
         let base: String = self
@@ -358,6 +372,31 @@ mod tests {
             source_rect: Rect::new(-1920, 0, 1920, 1080),
         });
         assert_eq!(step.cursor_in_image(), Some((1020, 300)));
+    }
+
+    #[test]
+    fn proximo_indice_de_imagem_continua_de_onde_parou() {
+        use crate::bundle::image_path;
+        use crate::geometry::Rect;
+
+        let mut rec = Recording::new("t", CaptureScope::default());
+        assert_eq!(rec.next_image_index(), 1, "gravação vazia começa no 1");
+
+        for numero in [1u32, 2, 7] {
+            let mut step = Step::new(StepKind::Manual);
+            step.image = Some(ImageRef {
+                path: image_path(numero),
+                thumb_path: None,
+                width: 10,
+                height: 10,
+                source_rect: Rect::new(0, 0, 10, 10),
+            });
+            rec.steps.push(step);
+        }
+        // Passo sem imagem não atrapalha a conta.
+        rec.steps.push(Step::manual("escrito à mão"));
+
+        assert_eq!(rec.next_image_index(), 8);
     }
 
     #[test]
