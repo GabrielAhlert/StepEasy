@@ -28,6 +28,12 @@ jobs:
   compilar:
     name: ${{ matrix.nome }}
     runs-on: ${{ matrix.os }}
+    env:
+      # No nível do job de propósito: o contexto `secrets` não está disponível
+      # no `if` de um passo, mas uma variável de ambiente do job está. É assim
+      # que os passos de assinatura conseguem se desligar sozinhos enquanto
+      # não houver certificado.
+      CERT_THUMBPRINT: ${{ secrets.WINDOWS_CERT_THUMBPRINT }}
     strategy:
       fail-fast: false
       matrix:
@@ -48,21 +54,81 @@ jobs:
       - name: Compilar
         run: cargo build --release -p stepeasy
 
-      - name: Montar o pacote
+      # Da tag saem duas formas da versão: a de exibição (que pode ter sufixo,
+      # como 0.2.0-rc1) e a numérica, exigida pelo campo de versão do .exe.
+      - name: Definir a versão
+        id: versao
+        shell: bash
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSAO="${TAG#v}"
+          NUMERICA="$(echo "$VERSAO" | grep -oE '^[0-9]+(\.[0-9]+){0,3}')"
+          NUMERICA="${NUMERICA:-0.0.0}"
+          echo "versao=$VERSAO" >> "$GITHUB_OUTPUT"
+          echo "numerica=$NUMERICA" >> "$GITHUB_OUTPUT"
+          echo "Versão $VERSAO (numérica $NUMERICA)"
+
+      # A assinatura fica aqui, entre compilar e empacotar, para o instalador
+      # já embrulhar um executável assinado. Só roda quando os segredos
+      # existirem — sem certificado, o release continua saindo normalmente.
+      - name: Assinar o executável
+        if: env.CERT_THUMBPRINT != ''
+        run: |
+          & "${env:ProgramFiles(x86)}\Windows Kits\10\bin\x64\signtool.exe" sign `
+            /sha1 $env:CERT_THUMBPRINT `
+            /fd SHA256 `
+            /tr http://timestamp.digicert.com /td SHA256 `
+            target\release\${{ matrix.binario }}
+
+      - name: Montar o pacote portátil
         shell: bash
         run: |
           mkdir -p pacote
           cp "target/release/${{ matrix.binario }}" pacote/
           cp README.md LICENSE pacote/
 
-      - name: Compactar
+      - name: Compactar o portátil
         run: Compress-Archive -Path pacote\* -DestinationPath ${{ matrix.pacote }}.zip
 
-      - name: Guardar o artefato
+      # O Inno Setup vem pré-instalado na imagem do runner; o fallback existe
+      # para o dia em que a imagem mudar e o release não quebrar por isso.
+      - name: Localizar o Inno Setup
+        id: inno
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Host "Inno Setup não encontrado na imagem; instalando."
+            choco install innosetup --no-progress -y
+          }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe não encontrado em $iscc" }
+          "iscc=$iscc" >> $env:GITHUB_OUTPUT
+
+      - name: Gerar o instalador
+        run: |
+          & "${{ steps.inno.outputs.iscc }}" `
+            /DMyAppVersion=${{ steps.versao.outputs.versao }} `
+            /DMyAppVersionNumeric=${{ steps.versao.outputs.numerica }} `
+            installer\stepeasy.iss
+
+      - name: Assinar o instalador
+        if: env.CERT_THUMBPRINT != ''
+        run: |
+          Get-ChildItem dist\*.exe | ForEach-Object {
+            & "${env:ProgramFiles(x86)}\Windows Kits\10\bin\x64\signtool.exe" sign `
+              /sha1 $env:CERT_THUMBPRINT `
+              /fd SHA256 `
+              /tr http://timestamp.digicert.com /td SHA256 `
+              $_.FullName
+          }
+
+      - name: Guardar os artefatos
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.pacote }}
-          path: '*.zip'
+          path: |
+            *.zip
+            dist/*.exe
           if-no-files-found: error
 
   publicar:
