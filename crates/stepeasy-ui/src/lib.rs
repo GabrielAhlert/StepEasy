@@ -1,5 +1,6 @@
 //! Interface do StepEasy.
 
+mod annotate;
 mod app;
 pub mod icons;
 mod screens;
@@ -25,7 +26,9 @@ pub use icons::Icon;
 pub use theme::apply as aplicar_tema;
 
 /// Abre a janela do aplicativo. Só retorna quando o usuário fecha.
-pub fn run() -> anyhow::Result<()> {
+///
+/// `abrir` é uma gravação `.stepeasy` para carregar já no editor.
+pub fn run(abrir: Option<std::path::PathBuf>) -> anyhow::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("StepEasy")
@@ -38,7 +41,13 @@ pub fn run() -> anyhow::Result<()> {
     eframe::run_native(
         "StepEasy",
         options,
-        Box::new(|cc| Ok(Box::new(App::new(cc)))),
+        Box::new(move |cc| {
+            let mut app = App::new(cc);
+            if let Some(path) = abrir {
+                app.open_path(&path);
+            }
+            Ok(Box::new(app))
+        }),
     )
     .map_err(|e| anyhow::anyhow!("não foi possível abrir a janela: {e}"))
 }

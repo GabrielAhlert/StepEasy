@@ -17,6 +17,9 @@ pub struct Palette {
     pub fg: Color32,
     pub muted: Color32,
     pub line: Color32,
+    /// Fundo de trilhos e caixas "afundadas" (controle deslizante, barra de
+    /// progresso). Precisa contrastar com `card`, senão o trilho some.
+    pub track: Color32,
     pub accent: Color32,
     pub accent_fg: Color32,
     pub selection: Color32,
@@ -31,6 +34,7 @@ impl Palette {
             fg: Color32::from_rgb(0x1B, 0x1B, 0x1F),
             muted: Color32::from_rgb(0x6B, 0x6B, 0x76),
             line: Color32::from_rgb(0xE3, 0xE3, 0xE8),
+            track: Color32::from_rgb(0xD7, 0xD7, 0xDE),
             accent: ACCENT_LIGHT,
             accent_fg: Color32::WHITE,
             selection: Color32::from_rgb(0xFB, 0xDE, 0xDC),
@@ -45,6 +49,7 @@ impl Palette {
             fg: Color32::from_rgb(0xEC, 0xEC, 0xF1),
             muted: Color32::from_rgb(0x9A, 0x9A, 0xA6),
             line: Color32::from_rgb(0x2C, 0x2C, 0x34),
+            track: Color32::from_rgb(0x3A, 0x3A, 0x45),
             accent: ACCENT_DARK,
             accent_fg: Color32::from_rgb(0x2A, 0x0B, 0x08),
             selection: Color32::from_rgb(0x3A, 0x22, 0x20),
@@ -111,7 +116,10 @@ fn visuals_for(dark: bool) -> Visuals {
     visuals.widgets.noninteractive.weak_bg_fill = p.card;
     visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0, p.line);
 
-    visuals.widgets.inactive.bg_fill = p.card;
+    // `bg_fill` é o que pinta trilhos e caixas afundadas; `weak_bg_fill` é o
+    // corpo de botões. Igualar os dois faria o trilho do controle deslizante
+    // desaparecer dentro do painel.
+    visuals.widgets.inactive.bg_fill = p.track;
     visuals.widgets.inactive.weak_bg_fill = p.card;
     visuals.widgets.inactive.bg_stroke = Stroke::new(1.0, p.line);
 

@@ -250,15 +250,84 @@ impl UiTarget {
     }
 }
 
-/// Marcação desenhada sobre a imagem (roadmap v0.2; o modelo já reserva o
-/// espaço para o formato não quebrar depois).
+/// Marcação desenhada sobre a captura de um passo.
+///
+/// **As coordenadas são em pixels da própria imagem**, com origem no canto
+/// superior esquerdo dela — e não no espaço de tela virtual como o resto do
+/// modelo. É o que mantém a anotação grudada no que ela aponta mesmo que os
+/// passos sejam reordenados ou que a imagem venha de outro monitor.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Annotation {
-    Rect { rect: Rect, color: [u8; 4], thickness: f32 },
-    Arrow { from: Point, to: Point, color: [u8; 4], thickness: f32 },
-    Text { at: Point, text: String, color: [u8; 4], size: f32 },
+    /// Contorno retangular, para cercar a região que importa.
+    Rect {
+        rect: Rect,
+        color: [u8; 4],
+        thickness: f32,
+    },
+    /// Seta apontando de `from` para `to`; a ponta fica em `to`.
+    Arrow {
+        from: Point,
+        to: Point,
+        color: [u8; 4],
+        thickness: f32,
+    },
+    /// Texto com halo de contraste, para ficar legível sobre qualquer fundo.
+    Text {
+        at: Point,
+        text: String,
+        color: [u8; 4],
+        size: f32,
+    },
+    /// Borra a região — é como se esconde senha, CPF e nome de cliente antes
+    /// de mandar o tutorial para fora.
     Blur { rect: Rect, radius: f32 },
+}
+
+impl Annotation {
+    /// Nome da ferramenta, para a lista do editor.
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Rect { .. } => "Retângulo",
+            Self::Arrow { .. } => "Seta",
+            Self::Text { .. } => "Texto",
+            Self::Blur { .. } => "Borrão",
+        }
+    }
+
+    /// Retângulo que a anotação ocupa, para acerto de clique e para mover.
+    pub fn bounds(&self) -> Rect {
+        match self {
+            Self::Rect { rect, .. } | Self::Blur { rect, .. } => *rect,
+            Self::Arrow { from, to, .. } => Rect::from_corners(*from, *to),
+            Self::Text { at, text, size, .. } => {
+                // Estimativa suficiente para acerto de clique: a medição exata
+                // exigiria a fonte, que é assunto do módulo de renderização.
+                let largura = (text.chars().count() as f32 * size * 0.55).max(*size);
+                Rect::new(at.x, at.y, largura as u32, (size * 1.3) as u32)
+            }
+        }
+    }
+
+    /// Desloca a anotação inteira.
+    pub fn translate(&mut self, dx: i32, dy: i32) {
+        match self {
+            Self::Rect { rect, .. } | Self::Blur { rect, .. } => {
+                rect.x += dx;
+                rect.y += dy;
+            }
+            Self::Arrow { from, to, .. } => {
+                from.x += dx;
+                from.y += dy;
+                to.x += dx;
+                to.y += dy;
+            }
+            Self::Text { at, .. } => {
+                at.x += dx;
+                at.y += dy;
+            }
+        }
+    }
 }
 
 #[cfg(test)]

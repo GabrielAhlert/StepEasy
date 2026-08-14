@@ -24,16 +24,43 @@ Escolhido antes de gravar:
 | Janela ativa | Só a janela em foco, recortada |
 | Região | Um retângulo fixo que você seleciona |
 
+## Anotações
+
+Sobre a captura de cada passo dá para desenhar:
+
+| Ferramenta | Para quê |
+|---|---|
+| Seta | Apontar o que clicar |
+| Retângulo | Cercar a região que importa |
+| Borrão | Sumir com senha, CPF, nome de cliente antes de mandar o tutorial para fora |
+| Texto | Escrever direto na imagem, com halo de contraste |
+
+No editor elas são desenhadas por cima da imagem, então apagar uma seta não custa qualidade da captura. Quem grava nos pixels é o export.
+
 ## Roadmap
 
-**v0.1 (em andamento)** — captura no Windows, editor com reordenação/edição/mesclagem e undo/redo, formato `.stepeasy`, export Markdown e HTML.
+**v0.1 (em andamento)** — captura no Windows, editor com reordenação/edição/mesclagem e undo/redo, anotações, formato `.stepeasy`, export Markdown e HTML.
 
-**Depois** — Linux (AT-SPI) e macOS (AX API), anotações (setas, retângulos, blur), redação automática de dados sensíveis, export PDF/DOCX, vídeo/GIF, diff entre gravações, export para Playwright.
+**Depois** — Linux (AT-SPI) e macOS (AX API), redação automática de dados sensíveis, export PDF/DOCX, vídeo/GIF, diff entre gravações, export para Playwright.
 
 ## Compilando
 
 ```bash
 cargo run --release
+```
+
+Passar um caminho abre a gravação direto no editor (é o que faz o "Abrir com" do
+Explorer funcionar):
+
+```bash
+cargo run --release -- minha-gravacao.stepeasy
+```
+
+Para mexer no editor sem precisar gravar nada — inclusive onde a captura ainda
+não existe — dá para gerar uma gravação sintética:
+
+```bash
+cargo run -p stepeasy-core --example gravacao_exemplo -- exemplo.stepeasy
 ```
 
 ## Estrutura
@@ -48,4 +75,8 @@ crates/
 
 ## Licença
 
-MIT
+MIT.
+
+O texto das anotações é rasterizado com a fonte **Ubuntu**, que vem do crate
+`epaint_default_fonts` (o mesmo pacote de fontes que o egui usa) e é
+distribuída sob a [Ubuntu Font Licence 1.0](https://ubuntu.com/legal/font-licence).

@@ -53,6 +53,9 @@ pub struct App {
     /// Passo mostrado no painel central.
     pub focused: Option<Uuid>,
 
+    /// Ferramenta de anotação ativa e o que está sendo desenhado.
+    pub annot: crate::annotate::Estado,
+
     pub scope: CaptureScope,
     pub monitors: Vec<MonitorInfo>,
     pub minimize_while_recording: bool,
@@ -95,6 +98,7 @@ impl App {
             toasts: Toasts::default(),
             selection: Vec::new(),
             focused: None,
+            annot: Default::default(),
             scope,
             monitors,
             minimize_while_recording: true,
@@ -136,6 +140,7 @@ impl App {
                 self.history.clear();
                 self.textures.clear();
                 self.selection.clear();
+                self.annot.limpar();
                 self.focused = None;
                 self.recorded_steps = 0;
                 self.recorder = Some(recorder);
@@ -252,11 +257,17 @@ impl App {
         else {
             return;
         };
-        match Project::open(&path) {
+        self.open_path(&path);
+    }
+
+    /// Abre um `.stepeasy` de um caminho conhecido (diálogo ou linha de comando).
+    pub fn open_path(&mut self, path: &std::path::Path) {
+        match Project::open(path) {
             Ok(project) => {
                 self.textures.clear();
                 self.history.clear();
                 self.selection.clear();
+                self.annot.limpar();
                 self.focused = project.recording.steps.first().map(|s| s.id);
                 self.project = Some(project);
                 self.screen = Screen::Editor;
