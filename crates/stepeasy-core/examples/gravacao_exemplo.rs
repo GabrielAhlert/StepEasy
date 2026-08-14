@@ -82,6 +82,34 @@ fn main() -> stepeasy_core::Result<()> {
             height: ALTURA,
             source_rect: Rect::new(0, 0, LARGURA, ALTURA),
         });
+        // O primeiro passo já vem anotado, para o editor abrir mostrando como
+        // cada ferramenta fica.
+        if numero == 1 {
+            step.annotations = vec![
+                stepeasy_core::Annotation::Blur {
+                    rect: Rect::new(34, 140, 340, 90),
+                    radius: 12.0,
+                },
+                stepeasy_core::Annotation::Rect {
+                    rect: Rect::new(620, 80, 270, 400),
+                    color: [0xE0, 0x2B, 0x20, 0xFF],
+                    thickness: 4.0,
+                },
+                stepeasy_core::Annotation::Arrow {
+                    from: Point::new(300, 430),
+                    to: Point::new(600, 300),
+                    color: [0x1A, 0x7F, 0x37, 0xFF],
+                    thickness: 5.0,
+                },
+                stepeasy_core::Annotation::Text {
+                    at: Point::new(120, 450),
+                    text: "Confira este painel".into(),
+                    color: [0x11, 0x11, 0x18, 0xFF],
+                    size: 30.0,
+                },
+            ];
+        }
+
         caption::refresh(&mut step);
 
         project.put_blob(image_path(numero), png);
