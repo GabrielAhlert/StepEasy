@@ -46,7 +46,13 @@ fn sized_button(ui: &mut Ui, icon: Icon, lado: f32) -> Response {
         egui::StrokeKind::Inside,
     );
 
-    draw(painter, icon, rect.center(), lado * 0.30, visuals.fg_stroke.color);
+    draw(
+        painter,
+        icon,
+        rect.center(),
+        lado * 0.30,
+        visuals.fg_stroke.color,
+    );
     response
 }
 
@@ -209,6 +215,10 @@ fn lua(painter: &egui::Painter, center: Pos2, raio: f32, cor: Color32) {
 
     // Arredonda as duas pontas, que num traço reto ficariam cortadas em bisel.
     for graus in [55.0, 305.0] {
-        painter.circle_filled(no_circulo(center, raio_arco, graus), grosso.width / 2.0, cor);
+        painter.circle_filled(
+            no_circulo(center, raio_arco, graus),
+            grosso.width / 2.0,
+            cor,
+        );
     }
 }

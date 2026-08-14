@@ -75,14 +75,9 @@ pub fn blurred_region(png: &[u8], rect: Rect, radius: f32) -> Result<RgbaImage> 
         return Ok(RgbaImage::new(1, 1));
     };
 
-    let mut recorte = image::imageops::crop_imm(
-        &img,
-        area.x as u32,
-        area.y as u32,
-        area.width,
-        area.height,
-    )
-    .to_image();
+    let mut recorte =
+        image::imageops::crop_imm(&img, area.x as u32, area.y as u32, area.width, area.height)
+            .to_image();
 
     let inteiro = Rect::new(0, 0, recorte.width(), recorte.height());
     blur_region(&mut recorte, inteiro, radius);
@@ -166,7 +161,9 @@ fn arrow(img: &mut RgbaImage, from: Point, to: Point, thickness: f32, color: [u8
 
     // A ponta cresce com a espessura, mas nunca passa de um terço da haste —
     // senão uma seta curta vira um triângulo só.
-    let tamanho = (thickness * 4.5).min(comprimento / 3.0).max(thickness * 2.0);
+    let tamanho = (thickness * 4.5)
+        .min(comprimento / 3.0)
+        .max(thickness * 2.0);
     let (ux, uy) = (dx / comprimento, dy / comprimento);
     for angulo in [150.0_f32, -150.0_f32] {
         let rad = angulo.to_radians();
@@ -234,9 +231,7 @@ fn blur_region(img: &mut RgbaImage, rect: Rect, radius: f32) {
     // para o desfoque não se alimentar do próprio resultado.
     for eixo in 0..2 {
         let origem: Vec<[u8; 4]> = (0..area.height)
-            .flat_map(|y| {
-                (0..area.width).map(move |x| (x, y))
-            })
+            .flat_map(|y| (0..area.width).map(move |x| (x, y)))
             .map(|(x, y)| img.get_pixel(area.x as u32 + x, area.y as u32 + y).0)
             .collect();
 
@@ -391,7 +386,9 @@ fn band(dist: f32, from: f32, to: f32) -> f32 {
 fn blend(pixel: &mut Rgba<u8>, color: [u8; 3], alpha: f32) {
     for i in 0..3 {
         let base = pixel[i] as f32;
-        pixel[i] = (base + (color[i] as f32 - base) * alpha).round().clamp(0.0, 255.0) as u8;
+        pixel[i] = (base + (color[i] as f32 - base) * alpha)
+            .round()
+            .clamp(0.0, 255.0) as u8;
     }
     pixel[3] = 255;
 }
@@ -459,7 +456,11 @@ mod tests {
 
         assert!(img.get_pixel(50, 20)[0] > 150, "borda de cima sem cor");
         assert!(img.get_pixel(20, 50)[0] > 150, "borda da esquerda sem cor");
-        assert_eq!(img.get_pixel(50, 50)[0], 20, "o miolo deveria ficar intacto");
+        assert_eq!(
+            img.get_pixel(50, 50)[0],
+            20,
+            "o miolo deveria ficar intacto"
+        );
     }
 
     #[test]
@@ -570,15 +571,14 @@ mod tests {
 
     #[test]
     fn regiao_borrada_fora_da_imagem_nao_quebra() {
-        let recorte = blurred_region(&imagem_lisa(40, 40), Rect::new(500, 500, 20, 20), 4.0)
-            .unwrap();
+        let recorte =
+            blurred_region(&imagem_lisa(40, 40), Rect::new(500, 500, 20, 20), 4.0).unwrap();
         assert_eq!((recorte.width(), recorte.height()), (1, 1));
     }
 
     #[test]
     fn regiao_borrada_e_recortada_ao_que_cabe_na_imagem() {
-        let recorte =
-            blurred_region(&imagem_lisa(40, 40), Rect::new(30, 30, 40, 40), 4.0).unwrap();
+        let recorte = blurred_region(&imagem_lisa(40, 40), Rect::new(30, 30, 40, 40), 4.0).unwrap();
         assert_eq!((recorte.width(), recorte.height()), (10, 10));
     }
 

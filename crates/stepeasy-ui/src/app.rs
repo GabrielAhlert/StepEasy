@@ -127,7 +127,10 @@ impl App {
             recorder: None,
             recorded_steps: 0,
             continuing: false,
-            dialogo: autosave.pendente.is_some().then_some(Dialogo::RecuperarRascunho),
+            dialogo: autosave
+                .pendente
+                .is_some()
+                .then_some(Dialogo::RecuperarRascunho),
             autosave,
             fechar_confirmado: false,
         }
@@ -288,10 +291,7 @@ impl App {
     }
 
     /// Move os passos prontos da thread de captura para o projeto.
-    fn drain_recorder_messages(
-        &mut self,
-        messages: &crossbeam_channel::Receiver<RecorderMessage>,
-    ) {
+    fn drain_recorder_messages(&mut self, messages: &crossbeam_channel::Receiver<RecorderMessage>) {
         let Some(project) = &mut self.project else {
             return;
         };
@@ -507,7 +507,8 @@ impl App {
             return;
         };
         let recording = &project.recording;
-        self.selection.retain(|id| recording.position_of(*id).is_some());
+        self.selection
+            .retain(|id| recording.position_of(*id).is_some());
         if self
             .focused
             .map(|id| recording.position_of(id).is_none())
@@ -522,11 +523,7 @@ impl App {
     }
 
     /// Executa uma edição registrando no histórico e marcando o projeto sujo.
-    pub fn edit<R>(
-        &mut self,
-        label: &str,
-        f: impl FnOnce(&mut Recording) -> R,
-    ) -> Option<R> {
+    pub fn edit<R>(&mut self, label: &str, f: impl FnOnce(&mut Recording) -> R) -> Option<R> {
         let project = self.project.as_mut()?;
         let out = self.history.edit(&mut project.recording, label, f);
         project.touch();
@@ -679,7 +676,10 @@ impl eframe::App for App {
 }
 
 fn nome_padrao() -> String {
-    format!("Gravação de {}", chrono::Local::now().format("%d/%m/%Y %H:%M"))
+    format!(
+        "Gravação de {}",
+        chrono::Local::now().format("%d/%m/%Y %H:%M")
+    )
 }
 
 /// O que fazer quando a janela pede para fechar.

@@ -21,7 +21,7 @@ pub use model::{
     FORMAT_VERSION,
 };
 pub use project::Project;
-pub use scope::{CaptureScope, MonitorInfo, MonitorId};
+pub use scope::{CaptureScope, MonitorId, MonitorInfo};
 
 /// Implementa o resolvedor de imagens do export em cima do projeto aberto.
 impl export::ImageResolver for Project {

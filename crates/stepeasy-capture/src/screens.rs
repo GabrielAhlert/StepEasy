@@ -328,9 +328,7 @@ mod tests {
     fn monitor_removido_no_meio_da_gravacao_cai_para_o_do_cursor() {
         let (rect, fb) = resolve_scope(
             &duas_telas(),
-            &CaptureScope::Monitor {
-                id: "sumiu".into(),
-            },
+            &CaptureScope::Monitor { id: "sumiu".into() },
             Point::new(10, 10),
             None,
         );

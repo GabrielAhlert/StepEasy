@@ -19,15 +19,28 @@ use crate::theme::{self, Palette};
 const THUMB_W: f32 = 132.0;
 
 pub(crate) enum Action {
-    Select { id: Uuid, ctrl: bool, shift: bool },
-    Move { from: usize, to: usize },
+    Select {
+        id: Uuid,
+        ctrl: bool,
+        shift: bool,
+    },
+    Move {
+        from: usize,
+        to: usize,
+    },
     MoveSelectedBy(i32),
     Delete,
     Duplicate(Uuid),
     Merge,
     InsertManual,
-    SetCaption { id: Uuid, text: String },
-    SetNotes { id: Uuid, text: String },
+    SetCaption {
+        id: Uuid,
+        text: String,
+    },
+    SetNotes {
+        id: Uuid,
+        text: String,
+    },
     ResetCaption(Uuid),
     SetTitle(String),
     SetDescription(String),
@@ -137,9 +150,8 @@ fn timeline(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
         .show(ui, |ui| {
-            let resposta = egui_dnd::dnd(ui, "timeline-dnd").show(
-                itens.iter(),
-                |ui, item, handle, _state| {
+            let resposta =
+                egui_dnd::dnd(ui, "timeline-dnd").show(itens.iter(), |ui, item, handle, _state| {
                     let (id, index, texto, thumb) = item;
                     let selecionado = app.selection.contains(id) || app.focused == Some(*id);
 
@@ -198,8 +210,7 @@ fn timeline(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
                             });
                         }
                     });
-                },
-            );
+                });
 
             if let Some(update) = resposta.final_update() {
                 // O `egui_dnd` reporta o destino no espaço "antes da remoção";
@@ -237,10 +248,10 @@ fn miniatura(app: &mut App, ui: &mut egui::Ui, path: &str) {
     if let Some(textura) = textura {
         let tamanho = textura.size_vec2();
         let escala = THUMB_W / tamanho.x.max(1.0);
-        ui.add(egui::Image::new(&textura).fit_to_exact_size(Vec2::new(
-            THUMB_W,
-            (tamanho.y * escala).min(110.0),
-        )));
+        ui.add(
+            egui::Image::new(&textura)
+                .fit_to_exact_size(Vec2::new(THUMB_W, (tamanho.y * escala).min(110.0))),
+        );
     }
 }
 
@@ -407,7 +418,11 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             }
 
             ui.add_space(8.0);
-            ui.label(RichText::new("Texto do passo").size(12.0).color(palette.muted));
+            ui.label(
+                RichText::new("Texto do passo")
+                    .size(12.0)
+                    .color(palette.muted),
+            );
             let mut caption = step.caption.clone();
             if ui
                 .add(
@@ -703,7 +718,10 @@ fn selecionar(app: &mut App, id: Uuid, ctrl: bool, shift: bool) {
             } else {
                 (alvo, ancora)
             };
-            app.selection = project.recording.steps[a..=b].iter().map(|s| s.id).collect();
+            app.selection = project.recording.steps[a..=b]
+                .iter()
+                .map(|s| s.id)
+                .collect();
             app.focused = Some(id);
             return;
         }

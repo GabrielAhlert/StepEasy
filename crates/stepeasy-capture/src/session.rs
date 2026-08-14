@@ -108,7 +108,11 @@ impl Grouper {
 
             // O instante que interessa é o do *press*, guardado em `self.down`:
             // é ele que ancora o passo e a janela do duplo clique.
-            RawEvent::MouseUp { button, at, time: _ } => {
+            RawEvent::MouseUp {
+                button,
+                at,
+                time: _,
+            } => {
                 let Some((down_button, down_at, down_time)) = self.down.take() else {
                     return actions;
                 };
@@ -311,7 +315,10 @@ pub struct CapturedStep {
 pub enum RecorderMessage {
     Step(Box<CapturedStep>),
     /// O passo anterior virou duplo clique.
-    UpgradeLast { kind: StepKind, caption: String },
+    UpgradeLast {
+        kind: StepKind,
+        caption: String,
+    },
     /// O usuário pressionou o atalho de parada.
     StopRequested,
     /// A gravação passou a pausada (`true`) ou voltou a gravar (`false`).
@@ -337,7 +344,11 @@ pub struct RecorderConfig {
 }
 
 impl RecorderConfig {
-    pub fn new(scope: CaptureScope, stop_combo: impl Into<String>, pause_combo: impl Into<String>) -> Self {
+    pub fn new(
+        scope: CaptureScope,
+        stop_combo: impl Into<String>,
+        pause_combo: impl Into<String>,
+    ) -> Self {
         Self {
             scope,
             stop_combo: stop_combo.into(),
@@ -680,7 +691,10 @@ mod tests {
         }
         // Só um Capture, no começo da digitação, e nada emitido ainda.
         assert_eq!(
-            acoes.iter().filter(|a| matches!(a, Action::Capture { .. })).count(),
+            acoes
+                .iter()
+                .filter(|a| matches!(a, Action::Capture { .. }))
+                .count(),
             1
         );
         assert!(emitidos(&acoes).is_empty());
@@ -722,7 +736,12 @@ mod tests {
     fn clique_captura_no_press_e_emite_no_release() {
         let mut g = Grouper::new();
         let acoes = g.push(&down(100, 100, 0));
-        assert_eq!(acoes, vec![Action::Capture { at: Point::new(100, 100) }]);
+        assert_eq!(
+            acoes,
+            vec![Action::Capture {
+                at: Point::new(100, 100)
+            }]
+        );
 
         let acoes = g.push(&up(102, 101, 90));
         assert_eq!(
@@ -803,7 +822,10 @@ mod tests {
             }));
         }
         assert_eq!(
-            acoes.iter().filter(|a| matches!(a, Action::Capture { .. })).count(),
+            acoes
+                .iter()
+                .filter(|a| matches!(a, Action::Capture { .. }))
+                .count(),
             1
         );
 
@@ -846,10 +868,7 @@ mod tests {
         let mut g = Grouper::new();
         g.push(&tecla("a", 0));
         let acoes = g.push(&down(10, 10, 300));
-        assert_eq!(
-            emitidos(&acoes),
-            vec![StepKind::Type { text: "a".into() }]
-        );
+        assert_eq!(emitidos(&acoes), vec![StepKind::Type { text: "a".into() }]);
     }
 
     #[test]

@@ -41,7 +41,10 @@ pub fn export(
         md.push_str(&format!("## {}. {}\n\n", step.index, step_text(step)));
 
         if !step.notes.trim().is_empty() {
-            md.push_str(&format!("> {}\n\n", step.notes.trim().replace('\n', "\n> ")));
+            md.push_str(&format!(
+                "> {}\n\n",
+                step.notes.trim().replace('\n', "\n> ")
+            ));
         }
 
         let Some(image) = &step.image else { continue };

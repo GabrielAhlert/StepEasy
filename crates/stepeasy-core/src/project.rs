@@ -120,10 +120,9 @@ impl Project {
 
     /// Salva no caminho já conhecido. Erro se o projeto nunca foi salvo.
     pub fn save(&mut self) -> Result<()> {
-        let path = self
-            .path
-            .clone()
-            .ok_or_else(|| Error::other("o projeto ainda não tem um arquivo; use \"Salvar como\""))?;
+        let path = self.path.clone().ok_or_else(|| {
+            Error::other("o projeto ainda não tem um arquivo; use \"Salvar como\"")
+        })?;
         self.save_as(path)
     }
 
@@ -267,7 +266,10 @@ mod tests {
         proj.save_copy_to(&rascunho).unwrap();
 
         assert!(rascunho.exists(), "a cópia deveria ter sido escrita");
-        assert!(proj.is_dirty(), "salvar cópia não guarda o trabalho do usuário");
+        assert!(
+            proj.is_dirty(),
+            "salvar cópia não guarda o trabalho do usuário"
+        );
         assert_eq!(proj.path(), None, "o projeto não deve adotar o rascunho");
 
         // E a cópia é um pacote válido.

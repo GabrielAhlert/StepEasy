@@ -81,12 +81,7 @@ impl Rect {
         if right <= x || bottom <= y {
             return None;
         }
-        Some(Rect::new(
-            x,
-            y,
-            (right - x) as u32,
-            (bottom - y) as u32,
-        ))
+        Some(Rect::new(x, y, (right - x) as u32, (bottom - y) as u32))
     }
 
     /// Menor retângulo que contém ambos.
