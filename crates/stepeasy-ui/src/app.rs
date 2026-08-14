@@ -10,6 +10,7 @@ use stepeasy_core::scope::{CaptureScope, MonitorInfo};
 use stepeasy_core::{caption, Project, Recording};
 use uuid::Uuid;
 
+use crate::recovery::Autosave;
 use crate::textures::Textures;
 use crate::toast::Toasts;
 use crate::{screens, theme};
@@ -65,6 +66,21 @@ pub struct App {
     pub recorded_steps: usize,
     /// `true` quando a gravação atual está acrescentando a uma existente.
     pub continuing: bool,
+
+    pub autosave: Autosave,
+    /// Diálogo aberto no momento, se houver.
+    pub dialogo: Option<Dialogo>,
+    /// Passa a `true` quando o usuário confirma sair perdendo o trabalho.
+    fechar_confirmado: bool,
+}
+
+/// Perguntas que precisam de resposta antes de seguir.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Dialogo {
+    /// Fechar a janela com alterações não salvas.
+    ConfirmarSaida,
+    /// Rascunho de uma sessão anterior encontrado ao abrir.
+    RecuperarRascunho,
 }
 
 impl App {
@@ -84,6 +100,8 @@ impl App {
             .unwrap_or_default();
 
         theme::apply(&cc.egui_ctx, dark);
+
+        let autosave = Autosave::new();
 
         let monitors = stepeasy_capture::platform()
             .screen
@@ -109,6 +127,9 @@ impl App {
             recorder: None,
             recorded_steps: 0,
             continuing: false,
+            dialogo: autosave.pendente.is_some().then_some(Dialogo::RecuperarRascunho),
+            autosave,
+            fechar_confirmado: false,
         }
     }
 
@@ -245,6 +266,12 @@ impl App {
         }
         self.selection = self.focused.into_iter().collect();
         self.screen = Screen::Editor;
+
+        // Momento de maior exposição: muitos passos recém-capturados e nada no
+        // disco ainda. O rascunho sai na hora, sem esperar o intervalo.
+        if let Some(project) = &mut self.project {
+            self.autosave.forcar(project);
+        }
 
         let total = self.recorded_steps;
         match (total, continuando) {
@@ -402,6 +429,9 @@ impl App {
                     .and_then(|p| p.file_name())
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_default();
+                // O trabalho está guardado onde o usuário quis; o rascunho de
+                // recuperação perdeu a razão de existir.
+                self.autosave.descartar(project);
                 self.toasts.info(format!("salvo em {nome}"));
             }
             Err(err) => self.toasts.error(format!("não foi possível salvar: {err}")),
@@ -512,6 +542,78 @@ impl App {
         }
     }
 
+    /// `true` quando há trabalho que se perderia agora.
+    pub fn tem_trabalho_nao_salvo(&self) -> bool {
+        self.project.as_ref().is_some_and(|p| p.is_dirty())
+    }
+
+    /// Intercepta o fechamento da janela.
+    ///
+    /// O egui já pediu para fechar quando isto roda; cancelar e perguntar é a
+    /// única forma de não perder uma gravação por um clique no X.
+    fn guarda_de_saida(&mut self, ctx: &egui::Context) {
+        let pedido = ctx.input(|i| i.viewport().close_requested());
+        let acao = decidir_saida(
+            pedido,
+            self.is_recording(),
+            self.tem_trabalho_nao_salvo(),
+            self.fechar_confirmado,
+        );
+
+        match acao {
+            AcaoDeSaida::Ignorar => {}
+
+            AcaoDeSaida::EncerrarGravacao => {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                self.stop_recording(ctx);
+            }
+
+            AcaoDeSaida::Perguntar => {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                self.dialogo = Some(Dialogo::ConfirmarSaida);
+            }
+
+            AcaoDeSaida::Fechar => {
+                // Saída limpa: o rascunho não serve mais para nada.
+                if let Some(project) = &self.project {
+                    self.autosave.descartar(project);
+                }
+            }
+        }
+    }
+
+    /// Fecha a janela de vez, sem passar pela guarda de novo.
+    pub fn fechar_mesmo_assim(&mut self, ctx: &egui::Context) {
+        self.fechar_confirmado = true;
+        self.dialogo = None;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+
+    /// Abre o rascunho da sessão anterior.
+    pub fn recuperar_rascunho(&mut self) {
+        let Some(caminho) = self.autosave.pendente.clone() else {
+            self.dialogo = None;
+            return;
+        };
+        self.open_path(&caminho);
+        self.dialogo = None;
+
+        if let Some(project) = &mut self.project {
+            // O rascunho é interno: forçar "Salvar como" evita que o usuário
+            // ache que guardou o trabalho dentro da pasta de recuperação.
+            project.forget_path();
+            project.touch();
+            self.toasts
+                .info("gravação recuperada — use Salvar para guardá-la onde quiser");
+        }
+        self.autosave.pendente = None;
+    }
+
+    pub fn descartar_rascunho(&mut self) {
+        self.autosave.descartar_pendente();
+        self.dialogo = None;
+    }
+
     fn shortcuts(&mut self, ctx: &egui::Context) {
         if self.is_recording() {
             return;
@@ -543,7 +645,19 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         self.poll_recorder(&ctx);
-        self.shortcuts(&ctx);
+        self.guarda_de_saida(&ctx);
+
+        // Enquanto grava, a janela costuma estar minimizada e o projeto cresce
+        // sozinho; é justamente aí que o rascunho vale mais.
+        if let Some(project) = &mut self.project {
+            self.autosave.tick(project);
+        }
+
+        // Um diálogo aberto segura os atalhos: Ctrl+S no meio de "sair sem
+        // salvar?" seria uma resposta ambígua.
+        if self.dialogo.is_none() {
+            self.shortcuts(&ctx);
+        }
 
         screens::chrome::top_bar(self, ui);
         screens::chrome::status_bar(self, ui);
@@ -552,6 +666,8 @@ impl eframe::App for App {
             Screen::Recorder => screens::recorder::show(self, ui),
             Screen::Editor => screens::editor::show(self, ui),
         }
+
+        screens::chrome::dialogos(self, &ctx);
     }
 
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
@@ -564,4 +680,93 @@ impl eframe::App for App {
 
 fn nome_padrao() -> String {
     format!("Gravação de {}", chrono::Local::now().format("%d/%m/%Y %H:%M"))
+}
+
+/// O que fazer quando a janela pede para fechar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AcaoDeSaida {
+    /// Ninguém pediu para fechar, ou já está decidido.
+    Ignorar,
+    /// Deixar fechar.
+    Fechar,
+    /// Encerrar a gravação primeiro; a decisão de fechar volta depois.
+    EncerrarGravacao,
+    /// Segurar a janela e perguntar ao usuário.
+    Perguntar,
+}
+
+/// Decide o destino de um pedido de fechamento.
+///
+/// Fica como função pura porque é aqui que mora o risco de perder trabalho: os
+/// casos são poucos, mas errar um deles significa ou perder uma gravação, ou
+/// prender o usuário numa janela que não fecha.
+fn decidir_saida(pedido: bool, gravando: bool, sujo: bool, confirmado: bool) -> AcaoDeSaida {
+    if !pedido {
+        return AcaoDeSaida::Ignorar;
+    }
+    if confirmado {
+        return AcaoDeSaida::Fechar;
+    }
+    if gravando {
+        return AcaoDeSaida::EncerrarGravacao;
+    }
+    if sujo {
+        return AcaoDeSaida::Perguntar;
+    }
+    AcaoDeSaida::Fechar
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sem_pedido_de_fechamento_nada_acontece() {
+        for gravando in [false, true] {
+            for sujo in [false, true] {
+                assert_eq!(
+                    decidir_saida(false, gravando, sujo, false),
+                    AcaoDeSaida::Ignorar
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn projeto_limpo_fecha_direto() {
+        assert_eq!(
+            decidir_saida(true, false, false, false),
+            AcaoDeSaida::Fechar
+        );
+    }
+
+    #[test]
+    fn alteracoes_nao_salvas_seguram_a_janela() {
+        assert_eq!(
+            decidir_saida(true, false, true, false),
+            AcaoDeSaida::Perguntar
+        );
+    }
+
+    #[test]
+    fn gravando_encerra_antes_de_decidir() {
+        // Mesmo com o projeto ainda limpo: os passos capturados até aqui só
+        // existem depois que a gravação termina de ser drenada.
+        assert_eq!(
+            decidir_saida(true, true, false, false),
+            AcaoDeSaida::EncerrarGravacao
+        );
+        assert_eq!(
+            decidir_saida(true, true, true, false),
+            AcaoDeSaida::EncerrarGravacao
+        );
+    }
+
+    #[test]
+    fn confirmado_fecha_mesmo_com_trabalho_pendente() {
+        // Sem isto, responder "sair sem salvar" cairia de novo na pergunta e a
+        // janela nunca fecharia.
+        assert_eq!(decidir_saida(true, false, true, true), AcaoDeSaida::Fechar);
+        assert_eq!(decidir_saida(true, true, true, true), AcaoDeSaida::Fechar);
+    }
 }

@@ -3,6 +3,7 @@
 mod annotate;
 mod app;
 pub mod icons;
+mod recovery;
 mod screens;
 mod textures;
 mod theme;

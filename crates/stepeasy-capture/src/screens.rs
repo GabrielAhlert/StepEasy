@@ -79,10 +79,6 @@ impl Screens {
         self.entries.iter().find(|e| e.info.bounds.contains(point))
     }
 
-    fn by_id(&self, id: &str) -> Option<&Entry> {
-        self.entries.iter().find(|e| e.info.id == id)
-    }
-
     fn primary(&self) -> &Entry {
         self.entries
             .iter()
@@ -97,36 +93,14 @@ impl Screens {
     }
 
     /// Resolve o escopo num retângulo do espaço virtual.
-    ///
-    /// `active_window` é o retângulo da janela em foco, que só a plataforma
-    /// sabe descobrir. Quando o escopo é `ActiveWindow` e o cursor está fora
-    /// dessa janela — clique num menu suspenso, que é outra janela —, a captura
-    /// cai para o monitor sob o cursor e sinaliza `fallback`.
     pub fn resolve(
         &self,
         scope: &CaptureScope,
         at: Point,
         active_window: Option<Rect>,
     ) -> (Rect, bool) {
-        match scope {
-            CaptureScope::AllMonitors => (self.virtual_bounds(), false),
-            CaptureScope::MonitorUnderCursor => (self.monitor_bounds_at(at), false),
-            CaptureScope::Monitor { id } => match self.by_id(id) {
-                Some(entry) => (entry.info.bounds, false),
-                None => (self.monitor_bounds_at(at), true),
-            },
-            CaptureScope::ActiveWindow => match active_window {
-                Some(rect) if !rect.is_empty() && rect.contains(at) => (rect, false),
-                _ => (self.monitor_bounds_at(at), true),
-            },
-            CaptureScope::Region { rect } => {
-                let visivel = rect.intersect(&self.virtual_bounds());
-                match visivel {
-                    Some(r) => (r, r != *rect),
-                    None => (self.monitor_bounds_at(at), true),
-                }
-            }
-        }
+        let monitores: Vec<MonitorInfo> = self.infos();
+        resolve_scope(&monitores, scope, at, active_window)
     }
 
     /// Captura o retângulo pedido, costurando os monitores que ele atravessa.
@@ -184,6 +158,53 @@ impl Screens {
     }
 }
 
+/// Traduz o escopo escolhido num retângulo do espaço de tela virtual, e diz se
+/// foi preciso abrir mão do que o usuário pediu.
+///
+/// Fica como função livre sobre a lista de monitores, e não como método do
+/// [`Screens`], para poder ser testada com monitores inventados: o `Screens`
+/// depende do `xcap` e de telas de verdade, e um teste que reimplementasse
+/// estas regras estaria conferindo a si mesmo.
+///
+/// `active_window` é o retângulo da janela em foco, que só a plataforma sabe
+/// descobrir. Quando o escopo é `ActiveWindow` e o cursor está fora dessa
+/// janela — clique num menu suspenso, que é outra janela —, a captura cai para
+/// o monitor sob o cursor e sinaliza `fallback`.
+pub fn resolve_scope(
+    monitores: &[MonitorInfo],
+    scope: &CaptureScope,
+    at: Point,
+    active_window: Option<Rect>,
+) -> (Rect, bool) {
+    let virtual_bounds = monitores
+        .iter()
+        .fold(Rect::new(0, 0, 0, 0), |acc, m| acc.union(&m.bounds));
+
+    let sob_cursor = monitores
+        .iter()
+        .find(|m| m.bounds.contains(at))
+        .or_else(|| monitores.iter().find(|m| m.is_primary))
+        .or_else(|| monitores.first())
+        .map_or(virtual_bounds, |m| m.bounds);
+
+    match scope {
+        CaptureScope::AllMonitors => (virtual_bounds, false),
+        CaptureScope::MonitorUnderCursor => (sob_cursor, false),
+        CaptureScope::Monitor { id } => match monitores.iter().find(|m| &m.id == id) {
+            Some(m) => (m.bounds, false),
+            None => (sob_cursor, true),
+        },
+        CaptureScope::ActiveWindow => match active_window {
+            Some(rect) if !rect.is_empty() && rect.contains(at) => (rect, false),
+            _ => (sob_cursor, true),
+        },
+        CaptureScope::Region { rect } => match rect.intersect(&virtual_bounds) {
+            Some(r) => (r, r != *rect),
+            None => (sob_cursor, true),
+        },
+    }
+}
+
 fn center_of(rect: &Rect) -> Point {
     Point::new(
         rect.x + rect.width as i32 / 2,
@@ -237,51 +258,23 @@ mod tests {
         }
     }
 
-    /// `Screens` sem `xcap`, para testar só a resolução de escopo.
-    struct Fake(Vec<MonitorInfo>);
-
-    impl Fake {
-        fn resolve(&self, scope: &CaptureScope, at: Point, win: Option<Rect>) -> (Rect, bool) {
-            let virtual_bounds = self
-                .0
-                .iter()
-                .fold(Rect::new(0, 0, 0, 0), |acc, m| acc.union(&m.bounds));
-            let sob_cursor = self
-                .0
-                .iter()
-                .find(|m| m.bounds.contains(at))
-                .map(|m| m.bounds)
-                .unwrap_or(self.0[0].bounds);
-
-            match scope {
-                CaptureScope::AllMonitors => (virtual_bounds, false),
-                CaptureScope::MonitorUnderCursor => (sob_cursor, false),
-                CaptureScope::Monitor { id } => match self.0.iter().find(|m| &m.id == id) {
-                    Some(m) => (m.bounds, false),
-                    None => (sob_cursor, true),
-                },
-                CaptureScope::ActiveWindow => match win {
-                    Some(r) if !r.is_empty() && r.contains(at) => (r, false),
-                    _ => (sob_cursor, true),
-                },
-                CaptureScope::Region { rect } => match rect.intersect(&virtual_bounds) {
-                    Some(r) => (r, r != *rect),
-                    None => (sob_cursor, true),
-                },
-            }
-        }
-    }
-
-    fn duas_telas() -> Fake {
-        Fake(vec![
+    /// Monitor principal com um segundo à esquerda, que é o arranjo que
+    /// produz coordenadas negativas — onde os erros costumam aparecer.
+    fn duas_telas() -> Vec<MonitorInfo> {
+        vec![
             tela("primaria", 0, 0, 1920, 1080, true),
             tela("esquerda", -1920, 0, 1920, 1080, false),
-        ])
+        ]
     }
 
     #[test]
     fn todas_as_telas_cobre_o_canvas_virtual() {
-        let (rect, fb) = duas_telas().resolve(&CaptureScope::AllMonitors, Point::new(0, 0), None);
+        let (rect, fb) = resolve_scope(
+            &duas_telas(),
+            &CaptureScope::AllMonitors,
+            Point::new(0, 0),
+            None,
+        );
         assert_eq!(rect, Rect::new(-1920, 0, 3840, 1080));
         assert!(!fb);
     }
@@ -289,9 +282,20 @@ mod tests {
     #[test]
     fn monitor_sob_o_cursor_segue_o_clique() {
         let telas = duas_telas();
-        let (rect, _) = telas.resolve(&CaptureScope::MonitorUnderCursor, Point::new(-500, 20), None);
+        let (rect, _) = resolve_scope(
+            &telas,
+            &CaptureScope::MonitorUnderCursor,
+            Point::new(-500, 20),
+            None,
+        );
         assert_eq!(rect, Rect::new(-1920, 0, 1920, 1080));
-        let (rect, _) = telas.resolve(&CaptureScope::MonitorUnderCursor, Point::new(500, 20), None);
+
+        let (rect, _) = resolve_scope(
+            &telas,
+            &CaptureScope::MonitorUnderCursor,
+            Point::new(500, 20),
+            None,
+        );
         assert_eq!(rect, Rect::new(0, 0, 1920, 1080));
     }
 
@@ -300,13 +304,18 @@ mod tests {
         let telas = duas_telas();
         let janela = Rect::new(100, 100, 800, 600);
 
-        let (rect, fb) =
-            telas.resolve(&CaptureScope::ActiveWindow, Point::new(200, 200), Some(janela));
+        let (rect, fb) = resolve_scope(
+            &telas,
+            &CaptureScope::ActiveWindow,
+            Point::new(200, 200),
+            Some(janela),
+        );
         assert_eq!(rect, janela);
         assert!(!fb);
 
         // Clique num menu suspenso, fora da janela em foco.
-        let (rect, fb) = telas.resolve(
+        let (rect, fb) = resolve_scope(
+            &telas,
             &CaptureScope::ActiveWindow,
             Point::new(1500, 900),
             Some(janela),
@@ -317,8 +326,8 @@ mod tests {
 
     #[test]
     fn monitor_removido_no_meio_da_gravacao_cai_para_o_do_cursor() {
-        let telas = duas_telas();
-        let (rect, fb) = telas.resolve(
+        let (rect, fb) = resolve_scope(
+            &duas_telas(),
             &CaptureScope::Monitor {
                 id: "sumiu".into(),
             },
@@ -331,11 +340,38 @@ mod tests {
 
     #[test]
     fn regiao_e_recortada_ao_que_existe_de_tela() {
-        let telas = duas_telas();
         let pedido = Rect::new(1800, 0, 400, 400);
-        let (rect, fb) = telas.resolve(&CaptureScope::Region { rect: pedido }, Point::new(0, 0), None);
+        let (rect, fb) = resolve_scope(
+            &duas_telas(),
+            &CaptureScope::Region { rect: pedido },
+            Point::new(0, 0),
+            None,
+        );
         assert_eq!(rect, Rect::new(1800, 0, 120, 400));
         assert!(fb);
+    }
+
+    #[test]
+    fn cursor_fora_de_qualquer_tela_cai_para_a_principal() {
+        // Acontece de verdade entre uma troca de resolução e a próxima.
+        let (rect, _) = resolve_scope(
+            &duas_telas(),
+            &CaptureScope::MonitorUnderCursor,
+            Point::new(9999, 9999),
+            None,
+        );
+        assert_eq!(rect, Rect::new(0, 0, 1920, 1080));
+    }
+
+    #[test]
+    fn sem_monitor_nenhum_nao_entra_em_panico() {
+        let (rect, _) = resolve_scope(
+            &[],
+            &CaptureScope::MonitorUnderCursor,
+            Point::new(0, 0),
+            None,
+        );
+        assert!(rect.is_empty());
     }
 
     #[test]
