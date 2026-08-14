@@ -7,9 +7,10 @@
 
 use egui::{Align, Layout, RichText, Sense, Vec2};
 use stepeasy_core::edit;
-use stepeasy_core::model::StepKind;
+use stepeasy_core::model::{Annotation, StepKind};
 use uuid::Uuid;
 
+use crate::annotate::{self, Mapa};
 use crate::app::App;
 use crate::icons::{self, Icon};
 use crate::theme::{self, Palette};
@@ -17,7 +18,7 @@ use crate::theme::{self, Palette};
 /// Largura da miniatura na timeline.
 const THUMB_W: f32 = 132.0;
 
-enum Action {
+pub(crate) enum Action {
     Select { id: Uuid, ctrl: bool, shift: bool },
     Move { from: usize, to: usize },
     MoveSelectedBy(i32),
@@ -30,6 +31,19 @@ enum Action {
     ResetCaption(Uuid),
     SetTitle(String),
     SetDescription(String),
+    AddAnnotation {
+        step: Uuid,
+        annotation: Annotation,
+    },
+    UpdateAnnotation {
+        step: Uuid,
+        index: usize,
+        annotation: Annotation,
+    },
+    DeleteAnnotation {
+        step: Uuid,
+        index: usize,
+    },
 }
 
 pub fn show(app: &mut App, ui: &mut egui::Ui) {
@@ -57,7 +71,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         .resizable(false)
         .show(ui, |ui| detalhes(app, ui, &palette, &mut actions));
 
-    egui::CentralPanel::default().show(ui, |ui| captura(app, ui, &palette));
+    egui::CentralPanel::default().show(ui, |ui| captura(app, ui, &palette, &mut actions));
 
     atalhos(&ctx, &mut actions);
     for action in actions {
@@ -149,17 +163,22 @@ fn timeline(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
 
                         let resposta = frame
                             .show(ui, |ui| {
+                                // Largura travada nos dois sentidos: sem o
+                                // máximo, uma legenda longa estica o cartão
+                                // para fora do painel e ele sai cortado.
                                 ui.set_width(THUMB_W);
+                                ui.set_max_width(THUMB_W);
                                 ui.horizontal(|ui| {
                                     ui.label(
                                         RichText::new(format!("{index}"))
                                             .strong()
                                             .color(palette.accent),
                                     );
-                                    ui.label(
-                                        RichText::new(texto)
-                                            .size(11.0)
-                                            .color(palette.muted),
+                                    ui.add(
+                                        egui::Label::new(
+                                            RichText::new(texto).size(11.0).color(palette.muted),
+                                        )
+                                        .truncate(),
                                     );
                                 });
                                 if let Some(thumb) = thumb {
@@ -227,7 +246,7 @@ fn miniatura(app: &mut App, ui: &mut egui::Ui, path: &str) {
 
 // ----------------------------------------------------------------- captura
 
-fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
+fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut Vec<Action>) {
     let Some(id) = app.focused else {
         ui.centered_and_justified(|ui| {
             ui.label(RichText::new("Selecione um passo na timeline.").color(palette.muted));
@@ -235,15 +254,16 @@ fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
         return;
     };
 
-    let (image_path, cursor, legenda) = {
+    let (image_path, cursor, legenda, anotacoes) = {
         let project = app.project.as_ref().unwrap();
         match project.recording.step_by_id(id) {
             Some(step) => (
                 step.image.as_ref().map(|i| i.path.clone()),
                 step.cursor_in_image(),
                 step.caption.clone(),
+                step.annotations.clone(),
             ),
-            None => (None, None, String::new()),
+            None => (None, None, String::new(), Vec::new()),
         }
     };
 
@@ -257,6 +277,9 @@ fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
         });
         return;
     };
+
+    annotate::toolbar(app, ui, palette);
+    ui.add_space(6.0);
 
     let textura = {
         let ctx = ui.ctx().clone();
@@ -284,14 +307,26 @@ fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
         .clamp(0.05, 1.0);
     let mostrado = tamanho * escala;
 
-    let resposta = ui.add(egui::Image::new(&textura).fit_to_exact_size(mostrado));
+    let resposta = ui
+        .add(egui::Image::new(&textura).fit_to_exact_size(mostrado))
+        .interact(annotate::sense());
 
-    // Marcador de clique desenhado por cima, sem tocar no PNG — o export é que
-    // grava o anel nos pixels.
+    let mapa = Mapa {
+        origem: resposta.rect.min,
+        escala,
+        largura: tamanho.x as u32,
+        altura: tamanho.y as u32,
+    };
+
+    // Tudo daqui para baixo é desenhado por cima, sem tocar no PNG: apagar uma
+    // seta não deve custar qualidade da captura. Quem grava nos pixels é o
+    // export, em `stepeasy_core::render::compose`.
+    let painter = ui.painter_at(resposta.rect);
+    annotate::preview(app, &painter, mapa, &anotacoes, palette);
+
     if let Some((cx, cy)) = cursor {
         let centro = resposta.rect.min + Vec2::new(cx as f32 * escala, cy as f32 * escala);
         let raio = 24.0 * escala.max(0.35);
-        let painter = ui.painter_at(resposta.rect);
         painter.circle_stroke(centro, raio, egui::Stroke::new(3.0, palette.accent));
         painter.circle_stroke(
             centro,
@@ -299,6 +334,8 @@ fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
             egui::Stroke::new(1.0, egui::Color32::WHITE),
         );
     }
+
+    annotate::interact(app, ui, &resposta, mapa, id, &anotacoes, actions);
 }
 
 // ---------------------------------------------------------------- detalhes
@@ -421,6 +458,8 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
                     }
                 }
             }
+
+            annotate::panel(app, ui, id, &step.annotations, palette, actions);
 
             ui.add_space(14.0);
             ui.separator();
@@ -590,6 +629,48 @@ fn aplicar(app: &mut App, action: Action) {
         Action::SetDescription(text) => {
             app.edit("Editar descrição", |rec| rec.description = text);
         }
+
+        Action::AddAnnotation { step, annotation } => {
+            let rotulo = format!("Adicionar {}", annotation.label().to_lowercase());
+            let indice = app.edit(&rotulo, |rec| {
+                rec.step_by_id_mut(step).map(|s| {
+                    s.annotations.push(annotation);
+                    s.annotations.len() - 1
+                })
+            });
+            // Seleciona a anotação recém-criada: no caso do texto, é o que
+            // deixa o campo de edição pronto para digitar sem mais um clique.
+            app.annot.selecionada = indice.flatten();
+        }
+
+        Action::UpdateAnnotation {
+            step,
+            index,
+            annotation,
+        } => {
+            // Arrastar e mexer no controle deslizante geram uma ação por
+            // quadro; agrupar pelo mesmo rótulo evita encher o histórico com
+            // dezenas de passos de um gesto só.
+            app.edit("Ajustar anotação", |rec| {
+                if let Some(alvo) = rec
+                    .step_by_id_mut(step)
+                    .and_then(|s| s.annotations.get_mut(index))
+                {
+                    *alvo = annotation;
+                }
+            });
+        }
+
+        Action::DeleteAnnotation { step, index } => {
+            app.edit("Remover anotação", |rec| {
+                if let Some(s) = rec.step_by_id_mut(step) {
+                    if index < s.annotations.len() {
+                        s.annotations.remove(index);
+                    }
+                }
+            });
+            app.annot.selecionada = None;
+        }
     }
 }
 
@@ -604,6 +685,12 @@ fn alvos(app: &App) -> Vec<Uuid> {
 
 fn selecionar(app: &mut App, id: Uuid, ctrl: bool, shift: bool) {
     let Some(project) = &app.project else { return };
+
+    // A anotação selecionada é um índice dentro do passo em foco; trocar de
+    // passo sem limpar deixaria o painel editando a anotação errada.
+    if app.focused != Some(id) {
+        app.annot.limpar();
+    }
 
     if shift {
         if let (Some(ancora), Some(alvo)) = (

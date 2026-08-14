@@ -50,10 +50,7 @@ pub fn export(
             continue;
         };
 
-        let bytes = match step.cursor_in_image() {
-            Some((x, y)) => render::with_click_marker(&bytes, x, y)?,
-            None => bytes,
-        };
+        let bytes = render::compose(&bytes, step.cursor_in_image(), &step.annotations)?;
 
         if !escreveu_imagem {
             std::fs::create_dir_all(&img_dir)?;

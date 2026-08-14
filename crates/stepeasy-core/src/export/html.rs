@@ -80,10 +80,8 @@ pub fn render_string(recording: &Recording, images: &mut dyn ImageResolver) -> R
 
         if let Some(image) = &step.image {
             if let Some(bytes) = images.resolve(&image.path) {
-                let bytes = match step.cursor_in_image() {
-                    Some((x, y)) => render::with_click_marker(&bytes, x, y)?,
-                    None => bytes,
-                };
+                let bytes =
+                    render::compose(&bytes, step.cursor_in_image(), &step.annotations)?;
                 html.push_str(&format!(
                     "<img alt=\"Passo {}\" src=\"data:image/png;base64,{}\">\n",
                     step.index,

@@ -11,5 +11,8 @@ fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    stepeasy_ui::run()
+    // Um caminho na linha de comando abre a gravação direto no editor. É o que
+    // faz o "Abrir com" do Explorer funcionar para arquivos .stepeasy.
+    let arquivo = std::env::args_os().nth(1).map(std::path::PathBuf::from);
+    stepeasy_ui::run(arquivo)
 }
