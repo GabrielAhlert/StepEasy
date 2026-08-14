@@ -3,7 +3,7 @@
 use egui::{Align, Layout, RichText};
 use stepeasy_core::export::Format;
 
-use crate::app::{App, Screen};
+use crate::app::{App, Dialogo, Screen};
 use crate::icons::{self, Icon};
 use crate::theme;
 use crate::toast::Level;
@@ -89,6 +89,82 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
                 });
             });
         });
+}
+
+/// Diálogos modais. Desenhados por último, por cima de tudo.
+pub fn dialogos(app: &mut App, ctx: &egui::Context) {
+    let Some(dialogo) = app.dialogo else {
+        return;
+    };
+    let palette = theme::palette(ctx);
+
+    egui::Modal::new(egui::Id::new("dialogo")).show(ctx, |ui| {
+        ui.set_width(420.0);
+
+        match dialogo {
+            Dialogo::ConfirmarSaida => {
+                ui.label(RichText::new("Sair sem salvar?").size(17.0).strong());
+                ui.add_space(6.0);
+                let passos = app.project.as_ref().map_or(0, |p| p.recording.steps.len());
+                ui.label(
+                    RichText::new(format!(
+                        "Esta gravação tem {passos} passo(s) com alterações não salvas. \
+                         Fechar agora perde o que não estiver no arquivo."
+                    ))
+                    .color(palette.muted),
+                );
+
+                ui.add_space(14.0);
+                ui.horizontal(|ui| {
+                    if ui.button("Salvar e sair").clicked() {
+                        app.save(false);
+                        // Se o usuário desistiu no seletor de arquivo, o
+                        // projeto continua sujo e a janela não deve fechar.
+                        if !app.tem_trabalho_nao_salvo() {
+                            app.fechar_mesmo_assim(ctx);
+                        } else {
+                            app.dialogo = None;
+                        }
+                    }
+                    if ui.button("Sair sem salvar").clicked() {
+                        app.fechar_mesmo_assim(ctx);
+                    }
+                    if ui.button("Cancelar").clicked() {
+                        app.dialogo = None;
+                    }
+                });
+            }
+
+            Dialogo::RecuperarRascunho => {
+                ui.label(
+                    RichText::new("Encontramos uma gravação não salva")
+                        .size(17.0)
+                        .strong(),
+                );
+                ui.add_space(6.0);
+                ui.label(
+                    RichText::new(
+                        "O StepEasy guarda um rascunho enquanto você grava e edita. \
+                         O da sessão anterior não chegou a ser salvo em arquivo.",
+                    )
+                    .color(palette.muted),
+                );
+
+                ui.add_space(14.0);
+                ui.horizontal(|ui| {
+                    if ui.button("Recuperar").clicked() {
+                        app.recuperar_rascunho();
+                    }
+                    if ui.button("Descartar").clicked() {
+                        app.descartar_rascunho();
+                    }
+                    if ui.button("Decidir depois").clicked() {
+                        app.dialogo = None;
+                    }
+                });
+            }
+        }
+    });
 }
 
 pub fn status_bar(app: &mut App, ui: &mut egui::Ui) {

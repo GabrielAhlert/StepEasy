@@ -20,6 +20,12 @@ pub struct Project {
     path: Option<PathBuf>,
     /// `true` quando há alterações não salvas.
     dirty: bool,
+    /// Conta quantas alterações o projeto sofreu.
+    ///
+    /// O autosave usa isto para não reescrever o mesmo conteúdo de minuto em
+    /// minuto: `dirty` continua verdadeiro enquanto não se salva, mas a revisão
+    /// só muda quando algo de fato mudou.
+    revision: u64,
     /// Bytes já carregados ou ainda não gravados, por caminho interno.
     blobs: HashMap<String, Vec<u8>>,
 }
@@ -31,6 +37,7 @@ impl Project {
             recording,
             path: None,
             dirty: true,
+            revision: 1,
             blobs: HashMap::new(),
         }
     }
@@ -43,6 +50,7 @@ impl Project {
             recording,
             path: Some(path),
             dirty: false,
+            revision: 0,
             blobs: HashMap::new(),
         })
     }
@@ -55,15 +63,29 @@ impl Project {
         self.dirty
     }
 
+    /// Esquece o arquivo de origem, forçando um "Salvar como" no próximo save.
+    ///
+    /// Usado ao recuperar um rascunho: ele mora numa pasta interna do
+    /// aplicativo, que não é lugar para o arquivo do usuário.
+    pub fn forget_path(&mut self) {
+        self.path = None;
+    }
+
+    /// Número que muda a cada alteração do projeto.
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
     /// Marca alterações pendentes. Chamado por quem edita a gravação.
     pub fn touch(&mut self) {
         self.dirty = true;
+        self.revision += 1;
     }
 
     /// Registra os bytes de um arquivo interno (usado pelo gravador).
     pub fn put_blob(&mut self, name: impl Into<String>, bytes: Vec<u8>) {
         self.blobs.insert(name.into(), bytes);
-        self.dirty = true;
+        self.touch();
     }
 
     /// Bytes de um arquivo interno, carregando do zip na primeira vez.
@@ -112,7 +134,23 @@ impl Project {
     /// que pode, inclusive, ser a origem das imagens que estamos copiando.
     pub fn save_as(&mut self, path: impl AsRef<Path>) -> Result<()> {
         let path = path.as_ref().to_path_buf();
+        self.write_to(&path)?;
+        self.path = Some(path);
+        self.dirty = false;
+        Ok(())
+    }
 
+    /// Escreve uma cópia em `path` **sem** passar a apontar para ela nem limpar
+    /// as alterações pendentes.
+    ///
+    /// É o que o autosave usa: o rascunho de recuperação não é o arquivo do
+    /// usuário, e salvá-lo não pode dar a impressão de que o trabalho já está
+    /// guardado onde ele espera.
+    pub fn save_copy_to(&mut self, path: impl AsRef<Path>) -> Result<()> {
+        self.write_to(path.as_ref())
+    }
+
+    fn write_to(&mut self, path: &Path) -> Result<()> {
         // Materializa tudo o que o manifesto referencia antes de tocar no disco.
         let mut needed: Vec<String> = Vec::new();
         for step in &self.recording.steps {
@@ -140,12 +178,9 @@ impl Project {
         }
         // `rename` no Windows falha se o destino existe; remove antes.
         if path.exists() {
-            std::fs::remove_file(&path)?;
+            std::fs::remove_file(path)?;
         }
-        std::fs::rename(&tmp, &path)?;
-
-        self.path = Some(path);
-        self.dirty = false;
+        std::fs::rename(&tmp, path)?;
         Ok(())
     }
 }
@@ -220,5 +255,47 @@ mod tests {
     fn save_sem_caminho_da_erro() {
         let mut proj = Project::new(Recording::new("x", CaptureScope::default()));
         assert!(proj.save().is_err());
+    }
+
+    #[test]
+    fn copia_nao_adota_o_caminho_nem_limpa_as_alteracoes() {
+        let dir = std::env::temp_dir().join(format!("stepeasy-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let rascunho = dir.join("rascunho.stepeasy");
+
+        let mut proj = projeto_com_imagem(&dir);
+        proj.save_copy_to(&rascunho).unwrap();
+
+        assert!(rascunho.exists(), "a cópia deveria ter sido escrita");
+        assert!(proj.is_dirty(), "salvar cópia não guarda o trabalho do usuário");
+        assert_eq!(proj.path(), None, "o projeto não deve adotar o rascunho");
+
+        // E a cópia é um pacote válido.
+        let mut lida = Project::open(&rascunho).unwrap();
+        assert_eq!(lida.blob(&image_path(1)).unwrap(), b"conteudo-png");
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn revisao_avanca_a_cada_alteracao_e_nao_ao_salvar() {
+        let dir = std::env::temp_dir().join(format!("stepeasy-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let mut proj = projeto_com_imagem(&dir);
+        let antes = proj.revision();
+
+        proj.touch();
+        assert!(proj.revision() > antes, "editar precisa mudar a revisão");
+
+        let depois_de_editar = proj.revision();
+        proj.save_as(dir.join("t.stepeasy")).unwrap();
+        assert_eq!(
+            proj.revision(),
+            depois_de_editar,
+            "salvar não é alteração; senão o autosave reescreveria à toa"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 }
