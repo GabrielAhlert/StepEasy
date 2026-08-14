@@ -4,6 +4,7 @@ use egui::{Align, Layout, RichText};
 use stepeasy_core::export::Format;
 
 use crate::app::{App, Screen};
+use crate::icons::{self, Icon};
 use crate::theme;
 use crate::toast::Level;
 
@@ -37,13 +38,12 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
                 });
 
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    let icone = if app.dark { "☀" } else { "🌙" };
-                    let dica = if app.dark {
-                        "Mudar para o tema claro"
+                    let (icone, dica) = if app.dark {
+                        (Icon::Sun, "Mudar para o tema claro")
                     } else {
-                        "Mudar para o tema escuro"
+                        (Icon::Moon, "Mudar para o tema escuro")
                     };
-                    if ui.button(icone).on_hover_text(dica).clicked() {
+                    if icons::button(ui, icone).on_hover_text(dica).clicked() {
                         app.dark = !app.dark;
                         theme::apply(&ctx, app.dark);
                     }
@@ -98,7 +98,10 @@ pub fn status_bar(app: &mut App, ui: &mut egui::Ui) {
 
                 if !texto.is_empty() {
                     ui.label(RichText::new(texto).color(cor).size(12.0));
-                    if ui.small_button("✕").clicked() {
+                    if icons::small_button(ui, Icon::Close)
+                        .on_hover_text("Dispensar")
+                        .clicked()
+                    {
                         app.toasts.dismiss();
                     }
                 }
