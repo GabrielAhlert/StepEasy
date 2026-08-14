@@ -170,18 +170,34 @@ impl Step {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum StepKind {
-    Click { button: MouseButton },
-    DoubleClick { button: MouseButton },
-    Drag { button: MouseButton, to: Point },
+    Click {
+        button: MouseButton,
+    },
+    DoubleClick {
+        button: MouseButton,
+    },
+    Drag {
+        button: MouseButton,
+        to: Point,
+    },
     /// Digitação agrupada.
-    Type { text: String },
+    Type {
+        text: String,
+    },
     /// Tecla ou combinação não-imprimível (ex.: "Ctrl+S", "Enter").
-    Key { combo: String },
-    Scroll { direction: ScrollDirection, amount: i32 },
+    Key {
+        combo: String,
+    },
+    Scroll {
+        direction: ScrollDirection,
+        amount: i32,
+    },
     /// Passo inserido manualmente no editor.
     Manual,
     /// Vários passos mesclados em um só.
-    Merged { count: u32 },
+    Merged {
+        count: u32,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

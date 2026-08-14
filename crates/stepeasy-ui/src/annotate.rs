@@ -138,7 +138,13 @@ pub fn toolbar(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
         // bolinha, sem trilho, e ninguém entende que dá para arrastar.
         ui.spacing_mut().slider_width = 90.0;
 
-        for tool in [Tool::Select, Tool::Arrow, Tool::Rect, Tool::Blur, Tool::Text] {
+        for tool in [
+            Tool::Select,
+            Tool::Arrow,
+            Tool::Rect,
+            Tool::Blur,
+            Tool::Text,
+        ] {
             if ui
                 .selectable_label(app.annot.tool == tool, tool.label())
                 .on_hover_text(tool.dica())
@@ -533,7 +539,10 @@ pub fn panel(
                 app.annot.selecionada = Some(indice);
             }
             if ui.small_button("remover").clicked() {
-                actions.push(Action::DeleteAnnotation { step, index: indice });
+                actions.push(Action::DeleteAnnotation {
+                    step,
+                    index: indice,
+                });
             }
         });
 
@@ -569,7 +578,10 @@ fn editar(
                     *color = cor_core(cor);
                     mudou = true;
                 }
-                if ui.add(egui::Slider::new(size, 12.0..=96.0).text("px")).changed() {
+                if ui
+                    .add(egui::Slider::new(size, 12.0..=96.0).text("px"))
+                    .changed()
+                {
                     mudou = true;
                 }
             });

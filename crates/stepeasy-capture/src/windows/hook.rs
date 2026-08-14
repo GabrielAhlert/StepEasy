@@ -16,8 +16,8 @@ use stepeasy_core::geometry::Point;
 use stepeasy_core::model::MouseButton;
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    GetAsyncKeyState, GetKeyboardLayout, MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC, VIRTUAL_KEY,
-    VK_CONTROL, VK_LMENU, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
+    GetAsyncKeyState, GetKeyboardLayout, MapVirtualKeyExW, ToUnicodeEx, MAPVK_VK_TO_VSC,
+    VIRTUAL_KEY, VK_CONTROL, VK_LMENU, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, GetMessageW, PostThreadMessageW, SetWindowsHookExW,
@@ -283,9 +283,8 @@ fn translate(vk: VIRTUAL_KEY, scan: u32, shift: bool) -> Option<String> {
         if shift {
             state[VK_SHIFT.0 as usize] = 0x80;
         }
-        if (GetAsyncKeyState(
-            windows::Win32::UI::Input::KeyboardAndMouse::VK_CAPITAL.0 as i32,
-        ) as u16
+        if (GetAsyncKeyState(windows::Win32::UI::Input::KeyboardAndMouse::VK_CAPITAL.0 as i32)
+            as u16
             & 0x0001)
             != 0
         {

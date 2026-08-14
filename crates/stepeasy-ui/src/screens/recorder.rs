@@ -63,10 +63,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             }
 
             if app.can_continue_recording() {
-                let passos = app
-                    .project
-                    .as_ref()
-                    .map_or(0, |p| p.recording.steps.len());
+                let passos = app.project.as_ref().map_or(0, |p| p.recording.steps.len());
                 ui.add_space(8.0);
                 let continuar = egui::Button::new(
                     RichText::new(format!("Continuar a gravação aberta ({passos} passos)"))
@@ -188,7 +185,10 @@ fn escopo(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
 
             let ativa = CaptureScope::ActiveWindow;
             if ui
-                .selectable_label(matches!(app.scope, CaptureScope::ActiveWindow), ativa.label())
+                .selectable_label(
+                    matches!(app.scope, CaptureScope::ActiveWindow),
+                    ativa.label(),
+                )
                 .clicked()
             {
                 app.scope = ativa;
@@ -196,7 +196,10 @@ fn escopo(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
 
             let todas = CaptureScope::AllMonitors;
             if ui
-                .selectable_label(matches!(app.scope, CaptureScope::AllMonitors), todas.label())
+                .selectable_label(
+                    matches!(app.scope, CaptureScope::AllMonitors),
+                    todas.label(),
+                )
                 .clicked()
             {
                 app.scope = todas;

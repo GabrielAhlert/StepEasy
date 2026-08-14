@@ -87,7 +87,8 @@ mod tests {
         let scope = CaptureScope::Region {
             rect: Rect::new(0, 0, 800, 600),
         };
-        let round: CaptureScope = serde_json::from_str(&serde_json::to_string(&scope).unwrap()).unwrap();
+        let round: CaptureScope =
+            serde_json::from_str(&serde_json::to_string(&scope).unwrap()).unwrap();
         assert_eq!(round, scope);
     }
 

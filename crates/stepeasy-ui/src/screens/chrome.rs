@@ -10,85 +10,77 @@ use crate::toast::Level;
 
 pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
-    egui::Panel::top("top")
-        .exact_size(52.0)
-        .show(ui, |ui| {
-            ui.horizontal_centered(|ui| {
-                ui.add_space(4.0);
-                ui.label(RichText::new("StepEasy").size(18.0).strong());
-                ui.add_space(12.0);
+    egui::Panel::top("top").exact_size(52.0).show(ui, |ui| {
+        ui.horizontal_centered(|ui| {
+            ui.add_space(4.0);
+            ui.label(RichText::new("StepEasy").size(18.0).strong());
+            ui.add_space(12.0);
 
-                let gravando = app.is_recording();
-                ui.add_enabled_ui(!gravando, |ui| {
+            let gravando = app.is_recording();
+            ui.add_enabled_ui(!gravando, |ui| {
+                if ui
+                    .selectable_label(app.screen == Screen::Recorder, "Gravar")
+                    .clicked()
+                {
+                    app.screen = Screen::Recorder;
+                }
+                let tem_projeto = app.project.is_some();
+                ui.add_enabled_ui(tem_projeto, |ui| {
                     if ui
-                        .selectable_label(app.screen == Screen::Recorder, "Gravar")
+                        .selectable_label(app.screen == Screen::Editor, "Editar")
                         .clicked()
                     {
-                        app.screen = Screen::Recorder;
+                        app.screen = Screen::Editor;
                     }
+                });
+            });
+
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                let (icone, dica) = if app.dark {
+                    (Icon::Sun, "Mudar para o tema claro")
+                } else {
+                    (Icon::Moon, "Mudar para o tema escuro")
+                };
+                if icons::button(ui, icone).on_hover_text(dica).clicked() {
+                    app.dark = !app.dark;
+                    theme::apply(&ctx, app.dark);
+                }
+
+                ui.add_enabled_ui(!gravando, |ui| {
                     let tem_projeto = app.project.is_some();
                     ui.add_enabled_ui(tem_projeto, |ui| {
-                        if ui
-                            .selectable_label(app.screen == Screen::Editor, "Editar")
-                            .clicked()
-                        {
-                            app.screen = Screen::Editor;
-                        }
-                    });
-                });
-
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    let (icone, dica) = if app.dark {
-                        (Icon::Sun, "Mudar para o tema claro")
-                    } else {
-                        (Icon::Moon, "Mudar para o tema escuro")
-                    };
-                    if icons::button(ui, icone).on_hover_text(dica).clicked() {
-                        app.dark = !app.dark;
-                        theme::apply(&ctx, app.dark);
-                    }
-
-                    ui.add_enabled_ui(!gravando, |ui| {
-                        let tem_projeto = app.project.is_some();
-                        ui.add_enabled_ui(tem_projeto, |ui| {
-                            ui.menu_button("Exportar", |ui| {
-                                if ui.button(Format::Markdown.label()).clicked() {
-                                    ui.close();
-                                    app.export(Format::Markdown);
-                                }
-                                if ui.button(Format::Html.label()).clicked() {
-                                    ui.close();
-                                    app.export(Format::Html);
-                                }
-                            });
-                            if ui
-                                .button("Salvar")
-                                .on_hover_text("Ctrl+S")
-                                .clicked()
-                            {
-                                app.save(false);
+                        ui.menu_button("Exportar", |ui| {
+                            if ui.button(Format::Markdown.label()).clicked() {
+                                ui.close();
+                                app.export(Format::Markdown);
+                            }
+                            if ui.button(Format::Html.label()).clicked() {
+                                ui.close();
+                                app.export(Format::Html);
                             }
                         });
-                        if ui.button("Abrir").on_hover_text("Ctrl+O").clicked() {
-                            app.open_dialog();
-                        }
-
-                        // Fica ao lado de Abrir porque é aqui que o usuário
-                        // está depois de parar de gravar e revisar os passos.
-                        if app.can_continue_recording()
-                            && ui
-                                .button("Continuar gravando")
-                                .on_hover_text(
-                                    "Acrescenta passos novos ao fim desta gravação",
-                                )
-                                .clicked()
-                        {
-                            app.continue_recording(&ctx);
+                        if ui.button("Salvar").on_hover_text("Ctrl+S").clicked() {
+                            app.save(false);
                         }
                     });
+                    if ui.button("Abrir").on_hover_text("Ctrl+O").clicked() {
+                        app.open_dialog();
+                    }
+
+                    // Fica ao lado de Abrir porque é aqui que o usuário
+                    // está depois de parar de gravar e revisar os passos.
+                    if app.can_continue_recording()
+                        && ui
+                            .button("Continuar gravando")
+                            .on_hover_text("Acrescenta passos novos ao fim desta gravação")
+                            .clicked()
+                    {
+                        app.continue_recording(&ctx);
+                    }
                 });
             });
         });
+    });
 }
 
 /// Diálogos modais. Desenhados por último, por cima de tudo.

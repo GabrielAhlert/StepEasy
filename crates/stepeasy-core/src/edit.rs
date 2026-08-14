@@ -187,10 +187,8 @@ pub fn split_typing(recording: &mut Recording, id: Uuid, at: usize) -> Option<Uu
     if at == 0 || at >= chars.len() {
         return None;
     }
-    let (head, tail): (String, String) = (
-        chars[..at].iter().collect(),
-        chars[at..].iter().collect(),
-    );
+    let (head, tail): (String, String) =
+        (chars[..at].iter().collect(), chars[at..].iter().collect());
 
     let mut second = recording.steps[pos].clone();
     second.id = Uuid::new_v4();

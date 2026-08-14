@@ -68,7 +68,10 @@ pub fn render_string(recording: &Recording, images: &mut dyn ImageResolver) -> R
     for step in &recording.steps {
         html.push_str("<section class=\"step\">\n<div class=\"head\">");
         html.push_str(&format!("<div class=\"num\">{}</div>", step.index));
-        html.push_str(&format!("<p class=\"text\">{}</p>", inline(&step_text(step))));
+        html.push_str(&format!(
+            "<p class=\"text\">{}</p>",
+            inline(&step_text(step))
+        ));
         html.push_str("</div>\n");
 
         if !step.notes.trim().is_empty() {
@@ -80,8 +83,7 @@ pub fn render_string(recording: &Recording, images: &mut dyn ImageResolver) -> R
 
         if let Some(image) = &step.image {
             if let Some(bytes) = images.resolve(&image.path) {
-                let bytes =
-                    render::compose(&bytes, step.cursor_in_image(), &step.annotations)?;
+                let bytes = render::compose(&bytes, step.cursor_in_image(), &step.annotations)?;
                 html.push_str(&format!(
                     "<img alt=\"Passo {}\" src=\"data:image/png;base64,{}\">\n",
                     step.index,
@@ -165,7 +167,10 @@ mod tests {
         rec.reindex();
 
         let mut images: HashMap<String, Vec<u8>> = HashMap::new();
-        images.insert(image_path(1), encode_png(&image::RgbaImage::new(10, 10)).unwrap());
+        images.insert(
+            image_path(1),
+            encode_png(&image::RgbaImage::new(10, 10)).unwrap(),
+        );
 
         let html = render_string(&rec, &mut images).unwrap();
         assert!(html.contains("src=\"data:image/png;base64,"));

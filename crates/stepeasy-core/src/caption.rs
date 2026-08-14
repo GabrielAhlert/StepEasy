@@ -14,7 +14,9 @@ pub fn generate(step: &Step) -> String {
 
     match &step.kind {
         StepKind::Click { button } => click_caption("Clicou", *button, step, target),
-        StepKind::DoubleClick { button } => click_caption("Clicou duas vezes", *button, step, target),
+        StepKind::DoubleClick { button } => {
+            click_caption("Clicou duas vezes", *button, step, target)
+        }
         StepKind::Drag { button, to } => {
             let origem = step
                 .cursor
@@ -41,7 +43,10 @@ pub fn generate(step: &Step) -> String {
                 .map(|d| format!(" {d}"))
                 .unwrap_or_default();
             let _ = amount;
-            with_window(format!("Rolou a tela {}{}", direction.label(), onde), target)
+            with_window(
+                format!("Rolou a tela {}{}", direction.label(), onde),
+                target,
+            )
         }
         StepKind::Manual => step.caption.clone(),
         StepKind::Merged { count } => format!("{count} ações agrupadas"),
@@ -94,18 +99,14 @@ fn describe_target(target: Option<&UiTarget>) -> Option<String> {
 /// Prefixa o tipo de controle com o artigo correto ("no botão", "na caixa").
 fn artigo(tipo: &str) -> String {
     const FEMININOS: &[&str] = &[
-        "caixa",
-        "lista",
-        "guia",
-        "barra",
-        "janela",
-        "tabela",
-        "célula",
-        "imagem",
-        "árvore",
+        "caixa", "lista", "guia", "barra", "janela", "tabela", "célula", "imagem", "árvore",
         "opção",
     ];
-    let primeira = tipo.split_whitespace().next().unwrap_or(tipo).to_lowercase();
+    let primeira = tipo
+        .split_whitespace()
+        .next()
+        .unwrap_or(tipo)
+        .to_lowercase();
     if FEMININOS.contains(&primeira.as_str()) {
         format!("na {tipo}")
     } else {
