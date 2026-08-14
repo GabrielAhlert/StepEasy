@@ -11,6 +11,7 @@ use stepeasy_core::model::StepKind;
 use uuid::Uuid;
 
 use crate::app::App;
+use crate::icons::{self, Icon};
 use crate::theme::{self, Palette};
 
 /// Largura da miniatura na timeline.
@@ -73,9 +74,9 @@ fn timeline(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             let dica = app
                 .history
                 .undo_label()
-                .map(|l| format!("Desfazer: {l}"))
-                .unwrap_or_else(|| "Desfazer".into());
-            if ui.button("↶").on_hover_text(dica).clicked() {
+                .map(|l| format!("Desfazer: {l} (Ctrl+Z)"))
+                .unwrap_or_else(|| "Desfazer (Ctrl+Z)".into());
+            if icons::button(ui, Icon::Undo).on_hover_text(dica).clicked() {
                 app.undo();
             }
         });
@@ -83,15 +84,14 @@ fn timeline(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             let dica = app
                 .history
                 .redo_label()
-                .map(|l| format!("Refazer: {l}"))
-                .unwrap_or_else(|| "Refazer".into());
-            if ui.button("↷").on_hover_text(dica).clicked() {
+                .map(|l| format!("Refazer: {l} (Ctrl+Shift+Z)"))
+                .unwrap_or_else(|| "Refazer (Ctrl+Shift+Z)".into());
+            if icons::button(ui, Icon::Redo).on_hover_text(dica).clicked() {
                 app.redo();
             }
         });
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            if ui
-                .button("+")
+            if icons::button(ui, Icon::Plus)
                 .on_hover_text("Inserir um passo escrito à mão")
                 .clicked()
             {
@@ -447,12 +447,23 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
 
             ui.add_space(6.0);
             ui.horizontal(|ui| {
-                if ui.button("↑").on_hover_text("Mover para cima").clicked() {
+                if icons::button(ui, Icon::ChevronUp)
+                    .on_hover_text("Mover o passo para cima")
+                    .clicked()
+                {
                     actions.push(Action::MoveSelectedBy(-1));
                 }
-                if ui.button("↓").on_hover_text("Mover para baixo").clicked() {
+                if icons::button(ui, Icon::ChevronDown)
+                    .on_hover_text("Mover o passo para baixo")
+                    .clicked()
+                {
                     actions.push(Action::MoveSelectedBy(1));
                 }
+                ui.label(
+                    RichText::new("ou arraste na timeline")
+                        .size(11.0)
+                        .color(palette.muted),
+                );
             });
         });
 }
