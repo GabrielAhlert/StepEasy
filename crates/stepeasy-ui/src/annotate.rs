@@ -6,6 +6,7 @@
 //! reduzida para caber.
 
 use egui::{Color32, Pos2, Rect as EguiRect, RichText, Sense, Stroke, Vec2};
+use rust_i18n::t;
 use stepeasy_core::geometry::{Point, Rect};
 use stepeasy_core::model::Annotation;
 use stepeasy_core::render::DEFAULT_COLOR;
@@ -27,24 +28,26 @@ pub enum Tool {
 }
 
 impl Tool {
-    pub fn label(&self) -> &'static str {
+    pub fn label(&self) -> String {
         match self {
-            Self::Select => "Selecionar",
-            Self::Arrow => "Seta",
-            Self::Rect => "Retângulo",
-            Self::Blur => "Borrão",
-            Self::Text => "Texto",
+            Self::Select => t!("anotacao.selecionar"),
+            Self::Arrow => t!("anotacao.seta"),
+            Self::Rect => t!("anotacao.retangulo"),
+            Self::Blur => t!("anotacao.borrao"),
+            Self::Text => t!("anotacao.texto"),
         }
+        .to_string()
     }
 
-    fn dica(&self) -> &'static str {
+    fn dica(&self) -> String {
         match self {
-            Self::Select => "Clique numa anotação para editá-la; arraste para mover",
-            Self::Arrow => "Arraste de onde a seta começa até onde ela aponta",
-            Self::Rect => "Arraste para cercar uma região",
-            Self::Blur => "Arraste sobre o que precisa sumir (senha, CPF, nome)",
-            Self::Text => "Clique onde o texto deve começar",
+            Self::Select => t!("anotacao.ajuda.selecionar"),
+            Self::Arrow => t!("anotacao.ajuda.seta"),
+            Self::Rect => t!("anotacao.ajuda.retangulo"),
+            Self::Blur => t!("anotacao.ajuda.borrao"),
+            Self::Text => t!("anotacao.ajuda.texto"),
         }
+        .to_string()
     }
 
     fn desenha_arrastando(&self) -> bool {
@@ -158,15 +161,27 @@ pub fn toolbar(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
         ui.separator();
 
         if app.annot.tool == Tool::Blur {
-            ui.label(RichText::new("Intensidade").size(11.0).color(palette.muted));
+            ui.label(
+                RichText::new(t!("anotacao.intensidade"))
+                    .size(11.0)
+                    .color(palette.muted),
+            );
             ui.add(egui::Slider::new(&mut app.annot.blur_radius, 4.0..=40.0).show_value(false));
         } else {
             ui.color_edit_button_srgba(&mut app.annot.color);
             if app.annot.tool == Tool::Text {
-                ui.label(RichText::new("Tamanho").size(11.0).color(palette.muted));
+                ui.label(
+                    RichText::new(t!("anotacao.tamanho"))
+                        .size(11.0)
+                        .color(palette.muted),
+                );
                 ui.add(egui::Slider::new(&mut app.annot.text_size, 12.0..=96.0).show_value(false));
             } else {
-                ui.label(RichText::new("Espessura").size(11.0).color(palette.muted));
+                ui.label(
+                    RichText::new(t!("anotacao.espessura"))
+                        .size(11.0)
+                        .color(palette.muted),
+                );
                 ui.add(egui::Slider::new(&mut app.annot.thickness, 1.0..=16.0).show_value(false));
             }
         }
@@ -214,7 +229,7 @@ pub fn interact(
                 step,
                 annotation: Annotation::Text {
                     at: ponto,
-                    text: "Texto".into(),
+                    text: t!("anotacao.texto_padrao").to_string(),
                     color: cor_core(app.annot.color),
                     size: app.annot.text_size,
                 },
@@ -517,11 +532,11 @@ pub fn panel(
     ui.add_space(10.0);
     ui.separator();
     ui.add_space(6.0);
-    ui.label(RichText::new(format!("Anotações ({})", anotacoes.len())).strong());
+    ui.label(RichText::new(t!("anotacao.titulo", n = anotacoes.len())).strong());
 
     if anotacoes.is_empty() {
         ui.label(
-            RichText::new("Use a barra acima da captura para marcar a imagem.")
+            RichText::new(t!("anotacao.vazio"))
                 .size(11.0)
                 .color(palette.muted),
         );
@@ -532,13 +547,15 @@ pub fn panel(
         let selecionada = app.annot.selecionada == Some(indice);
         ui.horizontal(|ui| {
             let resumo = match annotation {
-                Annotation::Text { text, .. } => format!("Texto: {}", primeiras_palavras(text)),
+                Annotation::Text { text, .. } => {
+                    format!("{}: {}", t!("anotacao.texto"), primeiras_palavras(text))
+                }
                 outra => outra.label().to_string(),
             };
             if ui.selectable_label(selecionada, resumo).clicked() {
                 app.annot.selecionada = Some(indice);
             }
-            if ui.small_button("remover").clicked() {
+            if ui.small_button(t!("comum.remover")).clicked() {
                 actions.push(Action::DeleteAnnotation {
                     step,
                     index: indice,

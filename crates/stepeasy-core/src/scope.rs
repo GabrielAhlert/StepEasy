@@ -29,15 +29,28 @@ pub enum CaptureScope {
 }
 
 impl CaptureScope {
-    /// Rótulo curto para a UI e para o manifesto.
-    pub fn label(&self) -> &'static str {
+    /// Rótulo curto para a UI, no idioma ativo.
+    pub fn label(&self) -> String {
         match self {
-            Self::AllMonitors => "Todas as telas",
-            Self::Monitor { .. } => "Tela específica",
-            Self::MonitorUnderCursor => "Tela sob o cursor",
-            Self::ActiveWindow => "Janela ativa",
-            Self::Region { .. } => "Região",
+            Self::AllMonitors => rust_i18n::t!("escopo.todas_as_telas"),
+            Self::Monitor { .. } => rust_i18n::t!("escopo.tela_especifica"),
+            Self::MonitorUnderCursor => rust_i18n::t!("escopo.tela_do_cursor"),
+            Self::ActiveWindow => rust_i18n::t!("escopo.janela_ativa"),
+            Self::Region { .. } => rust_i18n::t!("escopo.regiao"),
         }
+        .to_string()
+    }
+
+    /// Explicação de uma linha sobre o que o modo faz.
+    pub fn help(&self) -> String {
+        match self {
+            Self::AllMonitors => rust_i18n::t!("escopo.ajuda.todas_as_telas"),
+            Self::Monitor { .. } => rust_i18n::t!("escopo.ajuda.tela_especifica"),
+            Self::MonitorUnderCursor => rust_i18n::t!("escopo.ajuda.tela_do_cursor"),
+            Self::ActiveWindow => rust_i18n::t!("escopo.ajuda.janela_ativa"),
+            Self::Region { .. } => rust_i18n::t!("escopo.ajuda.regiao"),
+        }
+        .to_string()
     }
 
     /// Modos que produzem imagens de tamanho constante durante a gravação.
@@ -67,7 +80,11 @@ pub struct MonitorInfo {
 impl MonitorInfo {
     /// Rótulo pronto para o seletor de monitores.
     pub fn display_label(&self) -> String {
-        let primary = if self.is_primary { " (principal)" } else { "" };
+        let primary = if self.is_primary {
+            rust_i18n::t!("escopo.monitor_principal").to_string()
+        } else {
+            String::new()
+        };
         format!(
             "{} — {}×{}{}",
             self.name, self.bounds.width, self.bounds.height, primary

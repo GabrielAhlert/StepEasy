@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use egui::{Key, KeyboardShortcut, Modifiers};
+use rust_i18n::t;
 use stepeasy_capture::session::{Recorder, RecorderConfig, RecorderMessage};
 use stepeasy_core::edit::History;
 use stepeasy_core::export::{self, Format};
@@ -99,6 +100,11 @@ impl App {
             .and_then(|raw| serde_json::from_str(&raw).ok())
             .unwrap_or_default();
 
+        // O idioma vem da preferencia salva, senao do sistema. Precisa vir
+        // antes de qualquer `t!`, ou a primeira janela nasce no idioma errado.
+        let idioma = crate::idioma::inicial(cc.storage.and_then(|s| s.get_string("locale")));
+        crate::idioma::aplicar(&idioma);
+
         theme::apply(&cc.egui_ctx, dark);
 
         let autosave = Autosave::new();
@@ -166,16 +172,13 @@ impl App {
             return;
         }
         if !stepeasy_capture::is_supported() {
-            self.toasts
-                .error("a gravação ainda não está disponível neste sistema operacional");
+            self.toasts.error(t!("aviso.sem_suporte"));
             return;
         }
         if !continuar {
             if let Some(project) = &self.project {
                 if project.is_dirty() {
-                    self.toasts.info(
-                        "há alterações não salvas; elas serão substituídas pela nova gravação",
-                    );
+                    self.toasts.info(t!("aviso.substituira"));
                 }
             }
         }
@@ -199,8 +202,11 @@ impl App {
                     // Um instantâneo vazio antes de acrescentar: assim um
                     // Ctrl+Z depois devolve a gravação como ela estava.
                     if let Some(project) = &mut self.project {
-                        self.history
-                            .edit(&mut project.recording, "Continuar gravação", |_| {});
+                        self.history.edit(
+                            &mut project.recording,
+                            t!("acao.continuar_gravacao"),
+                            |_| {},
+                        );
                     }
                 } else {
                     self.project = Some(Project::new(Recording::new(
@@ -222,7 +228,7 @@ impl App {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
                 }
             }
-            Err(err) => self.toasts.error(format!("não foi possível gravar: {err}")),
+            Err(err) => self.toasts.error(t!("aviso.erro_gravar", erro = err)),
         }
     }
 
@@ -278,15 +284,9 @@ impl App {
 
         let total = self.recorded_steps;
         match (total, continuando) {
-            (0, _) => self
-                .toasts
-                .info("nenhum passo foi capturado — nada aconteceu durante a gravação?"),
-            (n, true) => self
-                .toasts
-                .info(format!("{n} passo(s) acrescentado(s) ao fim da gravação.")),
-            (n, false) => self
-                .toasts
-                .info(format!("{n} passo(s) capturado(s). Revise e salve.")),
+            (0, _) => self.toasts.info(t!("aviso.nada_capturado")),
+            (n, true) => self.toasts.info(t!("aviso.acrescentados", n = n)),
+            (n, false) => self.toasts.info(t!("aviso.capturados", n = n)),
         }
     }
 
@@ -331,9 +331,9 @@ impl App {
                 // mensagem existe para o aviso aparecer na hora.
                 RecorderMessage::Paused(pausado) => {
                     avisos.push(if pausado {
-                        format!("gravação pausada — {PAUSE_HOTKEY} para retomar")
+                        t!("aviso.pausada", atalho = PAUSE_HOTKEY).to_string()
                     } else {
-                        "gravação retomada".to_string()
+                        t!("aviso.retomada").to_string()
                     });
                 }
                 RecorderMessage::Error(err) => erros.push(err),
@@ -371,7 +371,7 @@ impl App {
 
     pub fn open_dialog(&mut self) {
         let Some(path) = rfd::FileDialog::new()
-            .add_filter("Gravação StepEasy", &["stepeasy"])
+            .add_filter(t!("aviso.arquivo_gravacao"), &["stepeasy"])
             .pick_file()
         else {
             return;
@@ -390,12 +390,12 @@ impl App {
                 self.focused = project.recording.steps.first().map(|s| s.id);
                 self.project = Some(project);
                 self.screen = Screen::Editor;
-                self.toasts.info(format!(
-                    "aberto: {}",
-                    path.file_name().unwrap_or_default().to_string_lossy()
+                self.toasts.info(t!(
+                    "aviso.aberto",
+                    arquivo = path.file_name().unwrap_or_default().to_string_lossy()
                 ));
             }
-            Err(err) => self.toasts.error(format!("não foi possível abrir: {err}")),
+            Err(err) => self.toasts.error(t!("aviso.erro_abrir", erro = err)),
         }
     }
 
@@ -406,7 +406,7 @@ impl App {
 
         let path = if force_dialog || project.path().is_none() {
             let Some(path) = rfd::FileDialog::new()
-                .add_filter("Gravação StepEasy", &["stepeasy"])
+                .add_filter(t!("aviso.arquivo_gravacao"), &["stepeasy"])
                 .set_file_name(project.suggested_filename())
                 .save_file()
             else {
@@ -432,9 +432,9 @@ impl App {
                 // O trabalho está guardado onde o usuário quis; o rascunho de
                 // recuperação perdeu a razão de existir.
                 self.autosave.descartar(project);
-                self.toasts.info(format!("salvo em {nome}"));
+                self.toasts.info(t!("aviso.salvo_em", arquivo = nome));
             }
-            Err(err) => self.toasts.error(format!("não foi possível salvar: {err}")),
+            Err(err) => self.toasts.error(t!("aviso.erro_salvar", erro = err)),
         }
     }
 
@@ -464,8 +464,8 @@ impl App {
         match result {
             Ok(()) => self
                 .toasts
-                .info(format!("exportado para {}", path.display())),
-            Err(err) => self.toasts.error(format!("falha ao exportar: {err}")),
+                .info(t!("aviso.exportado", caminho = path.display())),
+            Err(err) => self.toasts.error(t!("aviso.erro_exportar", erro = err)),
         }
     }
 
@@ -479,9 +479,9 @@ impl App {
             Some(label) => {
                 project.touch();
                 self.sanitize_selection();
-                self.toasts.info(format!("desfeito: {label}"));
+                self.toasts.info(t!("aviso.desfeito", acao = label));
             }
-            None => self.toasts.info("nada para desfazer"),
+            None => self.toasts.info(t!("aviso.nada_desfazer")),
         }
     }
 
@@ -493,9 +493,9 @@ impl App {
             Some(label) => {
                 project.touch();
                 self.sanitize_selection();
-                self.toasts.info(format!("refeito: {label}"));
+                self.toasts.info(t!("aviso.refeito", acao = label));
             }
-            None => self.toasts.info("nada para refazer"),
+            None => self.toasts.info(t!("aviso.nada_refazer")),
         }
     }
 
@@ -600,8 +600,7 @@ impl App {
             // ache que guardou o trabalho dentro da pasta de recuperação.
             project.forget_path();
             project.touch();
-            self.toasts
-                .info("gravação recuperada — use Salvar para guardá-la onde quiser");
+            self.toasts.info(t!("aviso.recuperada"));
         }
         self.autosave.pendente = None;
     }
@@ -669,6 +668,7 @@ impl eframe::App for App {
 
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         storage.set_string("dark", if self.dark { "1" } else { "0" }.into());
+        storage.set_string("locale", crate::idioma::atual());
         if let Ok(scope) = serde_json::to_string(&self.scope) {
             storage.set_string("scope", scope);
         }
@@ -676,10 +676,11 @@ impl eframe::App for App {
 }
 
 fn nome_padrao() -> String {
-    format!(
-        "Gravação de {}",
-        chrono::Local::now().format("%d/%m/%Y %H:%M")
+    t!(
+        "aviso.gravacao_padrao",
+        data = chrono::Local::now().format("%d/%m/%Y %H:%M")
     )
+    .to_string()
 }
 
 /// O que fazer quando a janela pede para fechar.

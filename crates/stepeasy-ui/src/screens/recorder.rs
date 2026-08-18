@@ -1,6 +1,7 @@
 //! Tela de gravação: escolher o escopo e começar.
 
 use egui::{RichText, Vec2};
+use rust_i18n::t;
 use stepeasy_core::scope::CaptureScope;
 
 use crate::app::{App, PAUSE_HOTKEY, STOP_HOTKEY};
@@ -22,15 +23,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 return;
             }
 
-            ui.label(RichText::new("Gravar um passo a passo").size(24.0).strong());
+            ui.label(RichText::new(t!("gravador.titulo")).size(24.0).strong());
             ui.add_space(6.0);
-            ui.label(
-                RichText::new(
-                    "Cada clique e cada trecho digitado vira um passo com captura de tela. \
-                     Você revisa e reorganiza tudo antes de exportar.",
-                )
-                .color(palette.muted),
-            );
+            ui.label(RichText::new(t!("gravador.subtitulo")).color(palette.muted));
             ui.add_space(28.0);
 
             // O `ComboBox` não obedece à centralização do painel: ele se ancora
@@ -44,14 +39,11 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             );
 
             ui.add_space(24.0);
-            ui.checkbox(
-                &mut app.minimize_while_recording,
-                "Minimizar o StepEasy durante a gravação",
-            );
+            ui.checkbox(&mut app.minimize_while_recording, t!("gravador.minimizar"));
 
             ui.add_space(20.0);
             let botao = egui::Button::new(
-                RichText::new("Iniciar gravação")
+                RichText::new(t!("gravador.iniciar"))
                     .size(17.0)
                     .strong()
                     .color(palette.accent_fg),
@@ -66,15 +58,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 let passos = app.project.as_ref().map_or(0, |p| p.recording.steps.len());
                 ui.add_space(8.0);
                 let continuar = egui::Button::new(
-                    RichText::new(format!("Continuar a gravação aberta ({passos} passos)"))
-                        .size(14.0),
+                    RichText::new(t!("gravador.continuar", passos = passos)).size(14.0),
                 )
                 .min_size(Vec2::new(240.0, 38.0));
                 if ui
                     .add(continuar)
-                    .on_hover_text(
-                        "Os passos novos entram no fim da gravação, sem apagar os que já existem",
-                    )
+                    .on_hover_text(t!("gravador.continuar_dica"))
                     .clicked()
                 {
                     app.continue_recording(&ctx);
@@ -83,8 +72,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
 
             ui.add_space(10.0);
             ui.label(
-                RichText::new(format!(
-                    "Durante a gravação: {STOP_HOTKEY} encerra, {PAUSE_HOTKEY} pausa e retoma"
+                RichText::new(t!(
+                    "gravador.atalhos",
+                    parar = STOP_HOTKEY,
+                    pausar = PAUSE_HOTKEY
                 ))
                 .color(palette.muted)
                 .size(12.0),
@@ -92,13 +83,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
 
             if !stepeasy_capture::is_supported() {
                 ui.add_space(16.0);
-                ui.label(
-                    RichText::new(
-                        "A captura de entrada ainda não está disponível neste sistema \
-                         operacional. Você pode abrir e editar gravações existentes.",
-                    )
-                    .color(palette.accent),
-                );
+                ui.label(RichText::new(t!("gravador.sem_suporte")).color(palette.accent));
             }
         });
     });
@@ -108,17 +93,17 @@ fn gravando(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
     let pausado = app.is_paused();
 
     let (titulo, cor) = if pausado {
-        ("❙❙ Pausado", palette.muted)
+        (t!("gravador.pausado"), palette.muted)
     } else {
-        ("● Gravando", palette.accent)
+        (t!("gravador.gravando"), palette.accent)
     };
     ui.label(RichText::new(titulo).size(24.0).strong().color(cor));
 
     ui.add_space(8.0);
     let contagem = if app.continuing {
-        format!("{} passo(s) acrescentado(s)", app.recorded_steps)
+        t!("gravador.acrescentados", n = app.recorded_steps)
     } else {
-        format!("{} passo(s) capturado(s)", app.recorded_steps)
+        t!("gravador.capturados", n = app.recorded_steps)
     };
     ui.label(RichText::new(contagem).size(16.0).color(palette.muted));
 
@@ -129,14 +114,19 @@ fn gravando(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
         let largura = 220.0 + 160.0 + ui.spacing().item_spacing.x;
         ui.add_space((ui.available_width() - largura).max(0.0) / 2.0);
 
-        let encerrar = egui::Button::new(RichText::new("Encerrar gravação").size(16.0).strong())
-            .min_size(Vec2::new(220.0, 42.0));
+        let encerrar =
+            egui::Button::new(RichText::new(t!("gravador.encerrar")).size(16.0).strong())
+                .min_size(Vec2::new(220.0, 42.0));
         if ui.add(encerrar).clicked() {
             let ctx = ui.ctx().clone();
             app.stop_recording(&ctx);
         }
 
-        let rotulo = if pausado { "Retomar" } else { "Pausar" };
+        let rotulo = if pausado {
+            t!("gravador.retomar")
+        } else {
+            t!("gravador.pausar")
+        };
         let pausar =
             egui::Button::new(RichText::new(rotulo).size(16.0)).min_size(Vec2::new(160.0, 42.0));
         if ui.add(pausar).clicked() {
@@ -146,8 +136,10 @@ fn gravando(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
 
     ui.add_space(8.0);
     ui.label(
-        RichText::new(format!(
-            "de qualquer lugar: {STOP_HOTKEY} encerra, {PAUSE_HOTKEY} pausa e retoma"
+        RichText::new(t!(
+            "gravador.atalhos_gravando",
+            parar = STOP_HOTKEY,
+            pausar = PAUSE_HOTKEY
         ))
         .color(palette.muted)
         .size(12.0),
@@ -156,7 +148,7 @@ fn gravando(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
     if pausado {
         ui.add_space(6.0);
         ui.label(
-            RichText::new("Nada está sendo capturado enquanto a pausa durar.")
+            RichText::new(t!("gravador.pausa_aviso"))
                 .color(palette.muted)
                 .size(12.0),
         );
@@ -164,53 +156,29 @@ fn gravando(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
 }
 
 fn escopo(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
-    ui.label(RichText::new("O que capturar").strong());
+    ui.label(RichText::new(t!("gravador.escopo_titulo")).strong());
     ui.add_space(6.0);
 
-    let atual = app.scope.label().to_string();
     egui::ComboBox::from_id_salt("escopo")
         .width(COLUNA - 24.0)
-        .selected_text(atual)
+        .selected_text(app.scope.label())
         .show_ui(ui, |ui| {
-            let sob_cursor = CaptureScope::MonitorUnderCursor;
-            if ui
-                .selectable_label(
-                    matches!(app.scope, CaptureScope::MonitorUnderCursor),
-                    sob_cursor.label(),
-                )
-                .clicked()
-            {
-                app.scope = sob_cursor;
-            }
-
-            let ativa = CaptureScope::ActiveWindow;
-            if ui
-                .selectable_label(
-                    matches!(app.scope, CaptureScope::ActiveWindow),
-                    ativa.label(),
-                )
-                .clicked()
-            {
-                app.scope = ativa;
-            }
-
-            let todas = CaptureScope::AllMonitors;
-            if ui
-                .selectable_label(
-                    matches!(app.scope, CaptureScope::AllMonitors),
-                    todas.label(),
-                )
-                .clicked()
-            {
-                app.scope = todas;
+            // A opção "tela específica" não é um valor pronto: ela precisa
+            // escolher qual monitor, então fica fora desta lista.
+            for opcao in [
+                CaptureScope::MonitorUnderCursor,
+                CaptureScope::ActiveWindow,
+                CaptureScope::AllMonitors,
+            ] {
+                let ativa = std::mem::discriminant(&app.scope) == std::mem::discriminant(&opcao);
+                if ui.selectable_label(ativa, opcao.label()).clicked() {
+                    app.scope = opcao;
+                }
             }
 
             let selecionada = matches!(app.scope, CaptureScope::Monitor { .. });
-            if ui
-                .selectable_label(selecionada, "Tela específica")
-                .clicked()
-                && !selecionada
-            {
+            let rotulo = t!("escopo.tela_especifica");
+            if ui.selectable_label(selecionada, rotulo).clicked() && !selecionada {
                 let id = app
                     .monitors
                     .iter()
@@ -229,7 +197,7 @@ fn escopo(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
             .iter()
             .find(|m| m.id == id)
             .map(|m| m.display_label())
-            .unwrap_or_else(|| "Selecione uma tela".to_string());
+            .unwrap_or_else(|| t!("escopo.tela_especifica").to_string());
 
         egui::ComboBox::from_id_salt("monitor")
             .width(COLUNA - 24.0)
@@ -249,7 +217,7 @@ fn escopo(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
 
         if app.monitors.is_empty() {
             ui.label(
-                RichText::new("Nenhuma tela foi detectada.")
+                RichText::new(t!("gravador.sem_telas"))
                     .color(palette.accent)
                     .size(12.0),
             );
@@ -258,28 +226,8 @@ fn escopo(app: &mut App, ui: &mut egui::Ui, palette: &theme::Palette) {
 
     ui.add_space(8.0);
     ui.label(
-        RichText::new(explicacao(&app.scope))
+        RichText::new(app.scope.help())
             .color(palette.muted)
             .size(12.0),
     );
-}
-
-fn explicacao(scope: &CaptureScope) -> &'static str {
-    match scope {
-        CaptureScope::MonitorUnderCursor => {
-            "Cada captura pega a tela onde o clique aconteceu. É o modo mais seguro \
-             quando você usa mais de um monitor."
-        }
-        CaptureScope::ActiveWindow => {
-            "Só a janela em foco entra na imagem, sem área de trabalho nem barra de tarefas. \
-             Cliques em menus suspensos caem para a tela inteira."
-        }
-        CaptureScope::AllMonitors => {
-            "Todas as telas lado a lado numa imagem só. Gera arquivos grandes."
-        }
-        CaptureScope::Monitor { .. } => {
-            "Sempre a mesma tela, mesmo que o clique aconteça em outra."
-        }
-        CaptureScope::Region { .. } => "Sempre a mesma região da tela.",
-    }
 }

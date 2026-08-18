@@ -21,3 +21,7 @@ ab_glyph = "0.2"
 # Fontes que o egui já embute. Depender delas evita colocar um .ttf no
 # repositório só para escrever o texto das anotações no export.
 epaint_default_fonts = "0.36"
+rust-i18n = "4.2.1"
+
+[dev-dependencies]
+serde_yml = "0.0.12"

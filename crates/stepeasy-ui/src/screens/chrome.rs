@@ -3,6 +3,8 @@
 use egui::{Align, Layout, RichText};
 use stepeasy_core::export::Format;
 
+use rust_i18n::t;
+
 use crate::app::{App, Dialogo, Screen};
 use crate::icons::{self, Icon};
 use crate::theme;
@@ -19,7 +21,7 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
             let gravando = app.is_recording();
             ui.add_enabled_ui(!gravando, |ui| {
                 if ui
-                    .selectable_label(app.screen == Screen::Recorder, "Gravar")
+                    .selectable_label(app.screen == Screen::Recorder, t!("comum.gravar"))
                     .clicked()
                 {
                     app.screen = Screen::Recorder;
@@ -27,7 +29,7 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
                 let tem_projeto = app.project.is_some();
                 ui.add_enabled_ui(tem_projeto, |ui| {
                     if ui
-                        .selectable_label(app.screen == Screen::Editor, "Editar")
+                        .selectable_label(app.screen == Screen::Editor, t!("comum.editar"))
                         .clicked()
                     {
                         app.screen = Screen::Editor;
@@ -37,19 +39,21 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
 
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 let (icone, dica) = if app.dark {
-                    (Icon::Sun, "Mudar para o tema claro")
+                    (Icon::Sun, t!("aviso.tema_claro"))
                 } else {
-                    (Icon::Moon, "Mudar para o tema escuro")
+                    (Icon::Moon, t!("aviso.tema_escuro"))
                 };
                 if icons::button(ui, icone).on_hover_text(dica).clicked() {
                     app.dark = !app.dark;
                     theme::apply(&ctx, app.dark);
                 }
 
+                seletor_de_idioma(ui);
+
                 ui.add_enabled_ui(!gravando, |ui| {
                     let tem_projeto = app.project.is_some();
                     ui.add_enabled_ui(tem_projeto, |ui| {
-                        ui.menu_button("Exportar", |ui| {
+                        ui.menu_button(t!("comum.exportar"), |ui| {
                             if ui.button(Format::Markdown.label()).clicked() {
                                 ui.close();
                                 app.export(Format::Markdown);
@@ -59,11 +63,19 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
                                 app.export(Format::Html);
                             }
                         });
-                        if ui.button("Salvar").on_hover_text("Ctrl+S").clicked() {
+                        if ui
+                            .button(t!("comum.salvar"))
+                            .on_hover_text("Ctrl+S")
+                            .clicked()
+                        {
                             app.save(false);
                         }
                     });
-                    if ui.button("Abrir").on_hover_text("Ctrl+O").clicked() {
+                    if ui
+                        .button(t!("comum.abrir"))
+                        .on_hover_text("Ctrl+O")
+                        .clicked()
+                    {
                         app.open_dialog();
                     }
 
@@ -71,8 +83,8 @@ pub fn top_bar(app: &mut App, ui: &mut egui::Ui) {
                     // está depois de parar de gravar e revisar os passos.
                     if app.can_continue_recording()
                         && ui
-                            .button("Continuar gravando")
-                            .on_hover_text("Acrescenta passos novos ao fim desta gravação")
+                            .button(t!("acao.continuar_gravacao"))
+                            .on_hover_text(t!("gravador.continuar_dica"))
                             .clicked()
                     {
                         app.continue_recording(&ctx);
@@ -95,20 +107,14 @@ pub fn dialogos(app: &mut App, ctx: &egui::Context) {
 
         match dialogo {
             Dialogo::ConfirmarSaida => {
-                ui.label(RichText::new("Sair sem salvar?").size(17.0).strong());
+                ui.label(RichText::new(t!("dialogo.sair_titulo")).size(17.0).strong());
                 ui.add_space(6.0);
                 let passos = app.project.as_ref().map_or(0, |p| p.recording.steps.len());
-                ui.label(
-                    RichText::new(format!(
-                        "Esta gravação tem {passos} passo(s) com alterações não salvas. \
-                         Fechar agora perde o que não estiver no arquivo."
-                    ))
-                    .color(palette.muted),
-                );
+                ui.label(RichText::new(t!("dialogo.sair_texto", n = passos)).color(palette.muted));
 
                 ui.add_space(14.0);
                 ui.horizontal(|ui| {
-                    if ui.button("Salvar e sair").clicked() {
+                    if ui.button(t!("dialogo.sair_salvar")).clicked() {
                         app.save(false);
                         // Se o usuário desistiu no seletor de arquivo, o
                         // projeto continua sujo e a janela não deve fechar.
@@ -118,10 +124,10 @@ pub fn dialogos(app: &mut App, ctx: &egui::Context) {
                             app.dialogo = None;
                         }
                     }
-                    if ui.button("Sair sem salvar").clicked() {
+                    if ui.button(t!("dialogo.sair_sem_salvar")).clicked() {
                         app.fechar_mesmo_assim(ctx);
                     }
-                    if ui.button("Cancelar").clicked() {
+                    if ui.button(t!("comum.cancelar")).clicked() {
                         app.dialogo = None;
                     }
                 });
@@ -129,28 +135,22 @@ pub fn dialogos(app: &mut App, ctx: &egui::Context) {
 
             Dialogo::RecuperarRascunho => {
                 ui.label(
-                    RichText::new("Encontramos uma gravação não salva")
+                    RichText::new(t!("dialogo.recuperar_titulo"))
                         .size(17.0)
                         .strong(),
                 );
                 ui.add_space(6.0);
-                ui.label(
-                    RichText::new(
-                        "O StepEasy guarda um rascunho enquanto você grava e edita. \
-                         O da sessão anterior não chegou a ser salvo em arquivo.",
-                    )
-                    .color(palette.muted),
-                );
+                ui.label(RichText::new(t!("dialogo.recuperar_texto")).color(palette.muted));
 
                 ui.add_space(14.0);
                 ui.horizontal(|ui| {
-                    if ui.button("Recuperar").clicked() {
+                    if ui.button(t!("dialogo.recuperar")).clicked() {
                         app.recuperar_rascunho();
                     }
-                    if ui.button("Descartar").clicked() {
+                    if ui.button(t!("dialogo.descartar")).clicked() {
                         app.descartar_rascunho();
                     }
-                    if ui.button("Decidir depois").clicked() {
+                    if ui.button(t!("dialogo.depois")).clicked() {
                         app.dialogo = None;
                     }
                 });
@@ -180,7 +180,7 @@ pub fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 if !texto.is_empty() {
                     ui.label(RichText::new(texto).color(cor).size(12.0));
                     if icons::small_button(ui, Icon::Close)
-                        .on_hover_text("Dispensar")
+                        .on_hover_text(t!("comum.dispensar"))
                         .clicked()
                     {
                         app.toasts.dismiss();
@@ -193,12 +193,12 @@ pub fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                             .path()
                             .and_then(|p| p.file_name())
                             .map(|n| n.to_string_lossy().to_string())
-                            .unwrap_or_else(|| "não salvo".to_string());
+                            .unwrap_or_else(|| t!("comum.nao_salvo").to_string());
                         let marca = if project.is_dirty() { "● " } else { "" };
                         ui.label(
                             RichText::new(format!(
-                                "{marca}{arquivo} · {} passo(s)",
-                                project.recording.steps.len()
+                                "{marca}{arquivo} · {}",
+                                t!("comum.passos", n = project.recording.steps.len())
                             ))
                             .color(palette.muted)
                             .size(12.0),
@@ -207,4 +207,25 @@ pub fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 });
             });
         });
+}
+
+/// Seletor de idioma.
+///
+/// A lista sai de `available_locales!`, entao um `.yml` novo em `locales/`
+/// aparece aqui sozinho — traduzir o StepEasy nao exige tocar em Rust.
+fn seletor_de_idioma(ui: &mut egui::Ui) {
+    let atual = crate::idioma::atual();
+
+    egui::ComboBox::from_id_salt("idioma")
+        .selected_text(crate::idioma::nome(&atual))
+        .show_ui(ui, |ui| {
+            for codigo in crate::idioma::disponiveis() {
+                let nome = crate::idioma::nome(&codigo);
+                if ui.selectable_label(codigo == atual, nome).clicked() {
+                    crate::idioma::aplicar(&codigo);
+                }
+            }
+        })
+        .response
+        .on_hover_text(t!("aviso.idioma"));
 }
