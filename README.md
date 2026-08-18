@@ -7,6 +7,10 @@ O PSR foi descontinuado, exporta só MHTML e não deixa editar nada depois de gr
 > Status: **v0.1** — utilizável no Windows. Linux e macOS abrem e editam
 > gravações, mas ainda não capturam.
 
+<!-- Depois de gravar (veja demo/ROTEIRO.md), descomente e aponte para o GIF:
+![StepEasy em funcionamento](demo/stepeasy-demo.gif)
+-->
+
 ## Instalação
 
 Na [última release](https://github.com/GabrielAhlert/StepEasy/releases) há duas formas:
@@ -100,6 +104,8 @@ crates/
 assets/
   logo/              SVGs da marca
   icons/             PNG e ICO gerados a partir do logo
+demo/                roteiro, tela fictícia e script de conversão da demonstração
+installer/           script do instalador (Inno Setup)
 ```
 
 Os ícones ficam versionados para compilar o StepEasy não depender de um
