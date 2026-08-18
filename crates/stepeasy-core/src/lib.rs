@@ -19,6 +19,22 @@ pub mod project;
 pub mod render;
 pub mod scope;
 
+pub use error::{Error, Result};
+pub use geometry::{Point, Rect};
+pub use model::{
+    Annotation, ImageRef, MouseButton, Recording, ScrollDirection, Step, StepKind, UiTarget,
+    FORMAT_VERSION,
+};
+pub use project::Project;
+pub use scope::{CaptureScope, MonitorId, MonitorInfo};
+
+/// Implementa o resolvedor de imagens do export em cima do projeto aberto.
+impl export::ImageResolver for Project {
+    fn resolve(&mut self, path: &str) -> Option<Vec<u8>> {
+        self.blob_opt(path).map(<[u8]>::to_vec)
+    }
+}
+
 /// Utilidades de teste compartilhadas entre os módulos.
 #[cfg(test)]
 pub(crate) mod teste {
@@ -33,21 +49,5 @@ pub(crate) mod teste {
         let _guarda = TRAVA.lock().unwrap_or_else(|e| e.into_inner());
         rust_i18n::set_locale(locale);
         f()
-    }
-}
-
-pub use error::{Error, Result};
-pub use geometry::{Point, Rect};
-pub use model::{
-    Annotation, ImageRef, MouseButton, Recording, ScrollDirection, Step, StepKind, UiTarget,
-    FORMAT_VERSION,
-};
-pub use project::Project;
-pub use scope::{CaptureScope, MonitorId, MonitorInfo};
-
-/// Implementa o resolvedor de imagens do export em cima do projeto aberto.
-impl export::ImageResolver for Project {
-    fn resolve(&mut self, path: &str) -> Option<Vec<u8>> {
-        self.blob_opt(path).map(<[u8]>::to_vec)
     }
 }
