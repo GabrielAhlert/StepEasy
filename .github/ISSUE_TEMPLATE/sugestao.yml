@@ -1,0 +1,26 @@
+name: Feature request
+description: An idea for something StepEasy should do
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: What problem are you trying to solve
+      description: >
+        Describe the situation, not the solution. Knowing what you were trying
+        to accomplish often leads to a better answer than the feature as
+        originally imagined.
+    validations:
+      required: true
+
+  - type: textarea
+    id: ideia
+    attributes:
+      label: What you have in mind
+    validations:
+      required: false
+
+  - type: textarea
+    id: hoje
+    attributes:
+      label: How you work around it today
