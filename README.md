@@ -9,7 +9,7 @@ O PSR foi descontinuado, exporta só MHTML e não deixa editar nada depois de gr
 
 ![StepEasy em funcionamento](demo/stepeasy-demo.gif)
 
-*Preencher um formulário, `Ctrl+Shift+F9`, e os passos já estão escritos.*
+*Borrar o que é sigiloso, cercar o que importa e apontar o próximo clique — desenhando direto sobre a captura.*
 
 ## Instalação
 
