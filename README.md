@@ -9,7 +9,7 @@ O PSR foi descontinuado, exporta só MHTML e não deixa editar nada depois de gr
 
 ![StepEasy em funcionamento](demo/stepeasy-demo.gif)
 
-*Borrar o que é sigiloso, cercar o que importa e apontar o próximo clique — desenhando direto sobre a captura.*
+*Escolher o que capturar, gravar, borrar o que é sigiloso, apontar o que importa — e exportar.*
 
 ## Instalação
 
@@ -25,12 +25,10 @@ executável ainda não é assinado — em "Mais informações", "Executar assim 
 
 ## Demonstração
 
-<!-- Arraste demo/stepeasy-demo.mp4 para dentro de uma issue do GitHub, copie a
-     URL de user-attachments que ele devolve e cole aqui sozinha numa linha —
-     o GitHub transforma em player. -->
-
 O vídeo completo (2 min) mostra a gravação, a edição dos passos, as anotações e
 o HTML exportado no fim.
+
+https://github.com/user-attachments/assets/b0114c5e-e28f-4bb2-bb39-15b4b4d2c67d
 
 ## Princípios
 
