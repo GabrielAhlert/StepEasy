@@ -128,7 +128,7 @@ O instalador é um script do [Inno Setup 6](https://jrsoftware.org/isinfo.php) e
 release:
 
 ```bash
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=0.1.0 installer\stepeasy.iss
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=0.1.1 installer\stepeasy.iss
 ```
 
 A saída vai para `dist/`. No CI a versão vem da tag, então o instalador nunca
