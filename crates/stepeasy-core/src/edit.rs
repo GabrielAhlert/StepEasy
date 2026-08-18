@@ -226,6 +226,7 @@ pub fn reset_caption(recording: &mut Recording, id: Uuid) {
 mod tests {
     use super::*;
     use crate::scope::CaptureScope;
+    use crate::teste::com_idioma;
 
     fn gravacao(n: usize) -> Recording {
         let mut rec = Recording::new("Teste", CaptureScope::default());
@@ -329,10 +330,12 @@ mod tests {
         rec.steps.push(step);
         rec.reindex();
 
-        assert!(split_typing(&mut rec, id, 9).is_some());
-        assert_eq!(rec.steps.len(), 2);
-        assert_eq!(rec.steps[0].caption, "Digitou \"relatorio\"");
-        assert_eq!(rec.steps[1].caption, "Digitou \".pdf\"");
+        com_idioma("pt-BR", || {
+            assert!(split_typing(&mut rec, id, 9).is_some());
+            assert_eq!(rec.steps.len(), 2);
+            assert_eq!(rec.steps[0].caption, "Digitou \"relatorio\"");
+            assert_eq!(rec.steps[1].caption, "Digitou \".pdf\"");
+        });
     }
 
     #[test]
@@ -345,10 +348,12 @@ mod tests {
         let id = step.id;
         rec.steps.push(step);
 
-        set_caption(&mut rec, id, "Salve tudo");
-        assert!(rec.steps[0].caption_edited);
-        reset_caption(&mut rec, id);
-        assert_eq!(rec.steps[0].caption, "Pressionou Ctrl+S");
-        assert!(!rec.steps[0].caption_edited);
+        com_idioma("pt-BR", || {
+            set_caption(&mut rec, id, "Salve tudo");
+            assert!(rec.steps[0].caption_edited);
+            reset_caption(&mut rec, id);
+            assert_eq!(rec.steps[0].caption, "Pressionou Ctrl+S");
+            assert!(!rec.steps[0].caption_edited);
+        });
     }
 }

@@ -34,6 +34,7 @@ jobs:
       # que os passos de assinatura conseguem se desligar sozinhos enquanto
       # não houver certificado.
       CERT_THUMBPRINT: ${{ secrets.WINDOWS_CERT_THUMBPRINT }}
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:

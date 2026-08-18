@@ -171,6 +171,18 @@ aviso:
   tema_escuro: Mudar para o tema escuro
   idioma: Idioma
 
+borrao_aviso:
+  titulo: O borrão não apaga o original
+  texto: >-
+    Esta gravação tem %{n} borrão(ões). Eles escondem o conteúdo no que você
+    exporta, mas o pacote .stepeasy guarda a captura original — quem receber o
+    arquivo pode remover a anotação e ver o que está embaixo.
+  recomendacao: >-
+    Para enviar a alguém, exporte em HTML ou Markdown. Compartilhe o .stepeasy
+    só com quem já poderia ver a tela original.
+  entendi: Salvar mesmo assim
+  nao_mostrar: Não avisar de novo
+
 tipo_passo:
   clique: clique
   duplo_clique: duplo clique

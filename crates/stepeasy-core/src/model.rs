@@ -64,6 +64,20 @@ impl Recording {
         self.steps.iter().position(|s| s.id == id)
     }
 
+    /// Quantos borrões existem na gravação inteira.
+    ///
+    /// O borrão é aplicado **na exportação**; o PNG guardado dentro do pacote
+    /// continua sendo a captura original. Quem tem o `.stepeasy` pode apagar a
+    /// anotação e ver o que estava embaixo, então o número serve para avisar
+    /// antes que alguém compartilhe o pacote achando que está sanitizado.
+    pub fn blur_count(&self) -> usize {
+        self.steps
+            .iter()
+            .flat_map(|s| &s.annotations)
+            .filter(|a| matches!(a, Annotation::Blur { .. }))
+            .count()
+    }
+
     /// Primeiro número livre para nomear imagens novas neste pacote.
     ///
     /// Continuar uma gravação precisa disso: reiniciar do 1 sobrescreveria as
@@ -373,6 +387,38 @@ mod tests {
             source_rect: Rect::new(-1920, 0, 1920, 1080),
         });
         assert_eq!(step.cursor_in_image(), Some((1020, 300)));
+    }
+
+    #[test]
+    fn conta_borroes_de_todos_os_passos() {
+        use crate::geometry::Rect;
+
+        let mut rec = Recording::new("t", CaptureScope::default());
+        assert_eq!(rec.blur_count(), 0);
+
+        let mut p1 = Step::manual("a");
+        p1.annotations = vec![
+            Annotation::Blur {
+                rect: Rect::new(0, 0, 10, 10),
+                radius: 5.0,
+            },
+            Annotation::Rect {
+                rect: Rect::new(0, 0, 10, 10),
+                color: [0, 0, 0, 255],
+                thickness: 1.0,
+            },
+        ];
+        let mut p2 = Step::manual("b");
+        p2.annotations = vec![Annotation::Blur {
+            rect: Rect::new(0, 0, 10, 10),
+            radius: 5.0,
+        }];
+        rec.steps.push(p1);
+        rec.steps.push(p2);
+        rec.steps.push(Step::manual("sem anotação"));
+
+        // Só os borrões contam: é sobre eles que o aviso fala.
+        assert_eq!(rec.blur_count(), 2);
     }
 
     #[test]

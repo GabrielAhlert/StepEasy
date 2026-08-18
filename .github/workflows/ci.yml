@@ -13,10 +13,20 @@ env:
   # que houvesse nada a corrigir aqui. O rigor fica no clippy, abaixo, que só
   # olha o código do projeto.
 
+# Um push novo cancela a verificacao do anterior no mesmo ramo. Sem isto, uma
+# sequencia de commits enfileira execucoes inteiras que ninguem vai ler, e a
+# fila esconde o resultado que interessa.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verificar:
     name: ${{ matrix.nome }}
     runs-on: ${{ matrix.os }}
+    # O limite existe por causa do apt: um espelho lento ja segurou um job por
+    # meia hora antes de alguem cancelar na mao. Melhor falhar em 25 minutos.
+    timeout-minutes: 25
     strategy:
       # Uma plataforma quebrada não deve esconder o resultado da outra.
       fail-fast: false
@@ -42,6 +52,7 @@ jobs:
       # apodreça antes do suporte chegar de verdade.
       - name: Dependências de sistema (Linux)
         if: runner.os == 'Linux'
+        timeout-minutes: 10
         uses: ./.github/actions/deps-linux
 
       # Formatação é a mesma nos dois sistemas; conferir uma vez basta.

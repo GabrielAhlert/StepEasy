@@ -120,12 +120,42 @@ pub fn dialogos(app: &mut App, ctx: &egui::Context) {
                         // projeto continua sujo e a janela não deve fechar.
                         if !app.tem_trabalho_nao_salvo() {
                             app.fechar_mesmo_assim(ctx);
-                        } else {
+                        } else if app.dialogo == Some(Dialogo::ConfirmarSaida) {
+                            // `save` pode ter aberto outro diálogo por cima
+                            // deste — o aviso de borrão, por exemplo. Fechar
+                            // aqui sem olhar apagaria a pergunta antes de ela
+                            // aparecer.
                             app.dialogo = None;
                         }
                     }
                     if ui.button(t!("dialogo.sair_sem_salvar")).clicked() {
                         app.fechar_mesmo_assim(ctx);
+                    }
+                    if ui.button(t!("comum.cancelar")).clicked() {
+                        app.dialogo = None;
+                    }
+                });
+            }
+
+            Dialogo::BorraoNoPacote => {
+                let n = app.borroes();
+                ui.label(RichText::new(t!("borrao_aviso.titulo")).size(17.0).strong());
+                ui.add_space(6.0);
+                ui.label(RichText::new(t!("borrao_aviso.texto", n = n)).color(palette.muted));
+                ui.add_space(8.0);
+                ui.label(
+                    RichText::new(t!("borrao_aviso.recomendacao"))
+                        .color(palette.muted)
+                        .strong(),
+                );
+
+                ui.add_space(14.0);
+                ui.horizontal(|ui| {
+                    if ui.button(t!("borrao_aviso.entendi")).clicked() {
+                        app.salvar_apos_aviso(false);
+                    }
+                    if ui.button(t!("borrao_aviso.nao_mostrar")).clicked() {
+                        app.salvar_apos_aviso(true);
                     }
                     if ui.button(t!("comum.cancelar")).clicked() {
                         app.dialogo = None;
