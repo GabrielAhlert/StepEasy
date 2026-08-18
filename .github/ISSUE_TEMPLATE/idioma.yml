@@ -1,0 +1,41 @@
+name: New language
+description: Offer to translate StepEasy into another language
+title: "Translation: <language>"
+labels: ["translation", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. Translating needs no Rust and no build — you copy one file
+        and translate text. The guide is in
+        [TRANSLATING.md](https://github.com/GabrielAhlert/StepEasy/blob/main/TRANSLATING.md).
+
+        Open this issue first so two people do not translate the same language
+        at the same time.
+
+  - type: input
+    id: idioma
+    attributes:
+      label: Language
+      placeholder: "Español (es), Deutsch (de)…"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: leitura
+    attributes:
+      label: Before you start
+      options:
+        - label: I read TRANSLATING.md
+          required: true
+        - label: I am a fluent speaker of this language
+          required: true
+
+  - type: textarea
+    id: duvidas
+    attributes:
+      label: Anything unclear
+      description: >
+        Sentences that do not translate well, or grammar your language needs
+        and the current structure does not allow. That kind of report is as
+        valuable as the translation itself.

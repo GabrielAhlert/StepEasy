@@ -1,0 +1,80 @@
+name: Bug report
+description: Something does not work as it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issues in English or Portuguese are equally welcome.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Choose the "Active window" scope
+        2. Start recording
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: StepEasy version
+      description: Shown in the installer, or the name of the .zip you downloaded.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Capture scope in use
+      description: Most capture bugs come from this choice, so it matters even when it seems unrelated.
+      options:
+        - Screen under the cursor
+        - Specific screen
+        - All screens
+        - Active window
+        - Not recording / not applicable
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+
+  - type: input
+    id: monitores
+    attributes:
+      label: Monitors and display scaling
+      description: >
+        Number of monitors, their resolutions, and the scaling of each
+        (Settings → Display → Scale). Multi-monitor and non-100% scaling are
+        where coordinates go wrong.
+      placeholder: "2 monitors: 2560x1440 at 150%, 1920x1080 at 100%"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: >
+        Screenshots help. If the bug is about a caption being wrong, tell us
+        which application you were recording — the text comes from that
+        program's accessibility information, and some programs expose very
+        little.

@@ -133,6 +133,15 @@ release:
 A saída vai para `dist/`. No CI a versão vem da tag, então o instalador nunca
 discorda dela.
 
+## Contribuindo
+
+Traduzir é a forma mais rápida de ajudar: copiar um arquivo e traduzir texto,
+sem precisar de Rust. Veja **[TRANSLATING.md](TRANSLATING.md)**.
+
+Para o resto — como compilar, rodar os testes e o que o CI exige — veja
+[CONTRIBUTING.md](CONTRIBUTING.md). Falhas de segurança em
+[SECURITY.md](SECURITY.md), nunca em issue pública.
+
 ## Licença
 
 MIT.
