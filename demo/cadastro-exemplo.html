@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Cadastro de Fornecedor — Sistema Exemplo</title>
+<style>
+  :root { --azul:#0f4c81; --linha:#c8cdd6; --fundo:#eef1f6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 "Segoe UI",system-ui,sans-serif; background:var(--fundo); color:#1b1b1f; }
+  header { background:var(--azul); color:#fff; padding:10px 16px; font-weight:600; }
+  nav { background:#dfe4ec; border-bottom:1px solid var(--linha); padding:6px 16px; display:flex; gap:20px; }
+  nav span { cursor:default; }
+  main { max-width:900px; margin:24px auto; background:#fff; border:1px solid var(--linha); }
+  h1 { font-size:16px; margin:0; padding:12px 20px; border-bottom:1px solid var(--linha); background:#f7f9fc; }
+  .campos { padding:20px; display:grid; grid-template-columns:170px 1fr; gap:12px 16px; align-items:center; }
+  label { color:#44485a; }
+  input, select { padding:7px 9px; border:1px solid var(--linha); border-radius:3px; font:inherit; width:100%; }
+  input:focus, select:focus { outline:2px solid var(--azul); outline-offset:-1px; }
+  .acoes { padding:14px 20px; border-top:1px solid var(--linha); background:#f7f9fc; display:flex; gap:10px; }
+  button { padding:8px 18px; border:1px solid var(--azul); border-radius:3px; background:var(--azul); color:#fff; font:inherit; cursor:pointer; }
+  button.sec { background:#fff; color:var(--azul); }
+  footer { text-align:center; color:#6b6b76; font-size:12px; margin:18px; }
+</style>
+</head>
+<body>
+  <header>Sistema Exemplo — Suprimentos</header>
+  <nav><span>Arquivo</span><span>Editar</span><span>Cadastros</span><span>Relatórios</span><span>Ajuda</span></nav>
+
+  <main>
+    <h1>Cadastro de Fornecedor</h1>
+    <div class="campos">
+      <label for="razao">Razão social</label>
+      <input id="razao" placeholder="Nome da empresa">
+
+      <label for="cnpj">CNPJ</label>
+      <input id="cnpj" value="00.000.000/0001-00">
+
+      <label for="contato">Contato responsável</label>
+      <input id="contato" value="Fulano de Tal">
+
+      <label for="cpf">CPF do contato</label>
+      <input id="cpf" value="000.000.000-00">
+
+      <label for="email">E-mail</label>
+      <input id="email" placeholder="contato@exemplo.com.br">
+
+      <label for="condicao">Condição de pagamento</label>
+      <select id="condicao">
+        <option>À vista</option>
+        <option>30 dias</option>
+        <option>30/60 dias</option>
+        <option>30/60/90 dias</option>
+      </select>
+    </div>
+    <div class="acoes">
+      <button id="salvar">Salvar</button>
+      <button class="sec">Cancelar</button>
+    </div>
+  </main>
+
+  <footer>Tela fictícia, criada só para gravar a demonstração do StepEasy. Nenhum dado aqui é real.</footer>
+</body>
+</html>
