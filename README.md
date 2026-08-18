@@ -7,9 +7,9 @@ O PSR foi descontinuado, exporta só MHTML e não deixa editar nada depois de gr
 > Status: **v0.1** — utilizável no Windows. Linux e macOS abrem e editam
 > gravações, mas ainda não capturam.
 
-<!-- Depois de gravar (veja demo/ROTEIRO.md), descomente e aponte para o GIF:
 ![StepEasy em funcionamento](demo/stepeasy-demo.gif)
--->
+
+*Preencher um formulário, `Ctrl+Shift+F9`, e os passos já estão escritos.*
 
 ## Instalação
 
@@ -22,6 +22,15 @@ Na [última release](https://github.com/GabrielAhlert/StepEasy/releases) há dua
 
 O Windows mostra um aviso do SmartScreen na primeira execução, porque o
 executável ainda não é assinado — em "Mais informações", "Executar assim mesmo".
+
+## Demonstração
+
+<!-- Arraste demo/stepeasy-demo.mp4 para dentro de uma issue do GitHub, copie a
+     URL de user-attachments que ele devolve e cole aqui sozinha numa linha —
+     o GitHub transforma em player. -->
+
+O vídeo completo (2 min) mostra a gravação, a edição dos passos, as anotações e
+o HTML exportado no fim.
 
 ## Princípios
 
