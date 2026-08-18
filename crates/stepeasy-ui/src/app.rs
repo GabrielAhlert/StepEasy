@@ -635,9 +635,10 @@ impl App {
         self.dialogo = None;
 
         if let Some(project) = &mut self.project {
-            // O rascunho é interno: forçar "Salvar como" evita que o usuário
-            // ache que guardou o trabalho dentro da pasta de recuperação.
-            project.forget_path();
+            // O rascunho continua sendo a fonte das imagens — elas são lidas
+            // do zip sob demanda. Marcar como rascunho só muda o destino do
+            // próximo salvamento.
+            project.marcar_como_rascunho();
             project.touch();
             self.toasts.info(t!("aviso.recuperada"));
         }

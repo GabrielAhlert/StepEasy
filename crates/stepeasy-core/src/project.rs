@@ -16,8 +16,15 @@ use crate::model::Recording;
 
 pub struct Project {
     pub recording: Recording,
-    /// Caminho do `.stepeasy` em disco, se já foi salvo.
-    path: Option<PathBuf>,
+    /// Arquivo de onde as imagens são lidas sob demanda.
+    ///
+    /// Nem sempre é o arquivo do usuário: ao recuperar um rascunho, ele aponta
+    /// para dentro da pasta do aplicativo. Quem quer saber "onde este projeto
+    /// está salvo" deve usar [`Project::path`], não este campo.
+    origem: Option<PathBuf>,
+    /// `true` quando `origem` é um rascunho interno, e não um arquivo escolhido
+    /// pelo usuário.
+    origem_temporaria: bool,
     /// `true` quando há alterações não salvas.
     dirty: bool,
     /// Conta quantas alterações o projeto sofreu.
@@ -35,7 +42,8 @@ impl Project {
     pub fn new(recording: Recording) -> Self {
         Self {
             recording,
-            path: None,
+            origem: None,
+            origem_temporaria: false,
             dirty: true,
             revision: 1,
             blobs: HashMap::new(),
@@ -48,27 +56,39 @@ impl Project {
         let recording = BundleReader::open(&path)?.recording()?;
         Ok(Self {
             recording,
-            path: Some(path),
+            origem: Some(path),
+            origem_temporaria: false,
             dirty: false,
             revision: 0,
             blobs: HashMap::new(),
         })
     }
 
+    /// Arquivo do usuário, ou `None` se a gravação ainda não foi salva.
+    ///
+    /// Um rascunho recuperado responde `None` de propósito: ele **é** legível
+    /// de um arquivo, mas não daquele que o usuário escolheu, e tratá-lo como
+    /// destino salvaria o trabalho dentro da pasta do aplicativo.
     pub fn path(&self) -> Option<&Path> {
-        self.path.as_deref()
+        if self.origem_temporaria {
+            None
+        } else {
+            self.origem.as_deref()
+        }
     }
 
     pub fn is_dirty(&self) -> bool {
         self.dirty
     }
 
-    /// Esquece o arquivo de origem, forçando um "Salvar como" no próximo save.
+    /// Marca a origem como rascunho interno.
     ///
-    /// Usado ao recuperar um rascunho: ele mora numa pasta interna do
-    /// aplicativo, que não é lugar para o arquivo do usuário.
-    pub fn forget_path(&mut self) {
-        self.path = None;
+    /// O caminho **continua valendo para ler as imagens** — é o que faz a
+    /// recuperação funcionar, já que as capturas são carregadas sob demanda do
+    /// zip. O que muda é o destino: o próximo salvamento pergunta onde guardar,
+    /// em vez de escrever dentro da pasta do aplicativo.
+    pub fn marcar_como_rascunho(&mut self) {
+        self.origem_temporaria = true;
     }
 
     /// Número que muda a cada alteração do projeto.
@@ -92,7 +112,7 @@ impl Project {
     pub fn blob(&mut self, name: &str) -> Result<&[u8]> {
         if !self.blobs.contains_key(name) {
             let path = self
-                .path
+                .origem
                 .as_ref()
                 .ok_or_else(|| Error::MissingEntry(name.to_string()))?;
             let bytes = BundleReader::open(path)?.read(name)?;
@@ -120,7 +140,7 @@ impl Project {
 
     /// Salva no caminho já conhecido. Erro se o projeto nunca foi salvo.
     pub fn save(&mut self) -> Result<()> {
-        let path = self.path.clone().ok_or_else(|| {
+        let path = self.path().map(Path::to_path_buf).ok_or_else(|| {
             Error::other("o projeto ainda não tem um arquivo; use \"Salvar como\"")
         })?;
         self.save_as(path)
@@ -134,7 +154,8 @@ impl Project {
     pub fn save_as(&mut self, path: impl AsRef<Path>) -> Result<()> {
         let path = path.as_ref().to_path_buf();
         self.write_to(&path)?;
-        self.path = Some(path);
+        self.origem = Some(path);
+        self.origem_temporaria = false;
         self.dirty = false;
         Ok(())
     }
@@ -246,6 +267,68 @@ mod tests {
         let mut de_novo = Project::open(&file).unwrap();
         assert_eq!(de_novo.recording.title, "Outro título");
         assert_eq!(de_novo.blob(&image_path(1)).unwrap(), b"conteudo-png");
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn rascunho_recuperado_ainda_le_as_imagens() {
+        // Regressao: a recuperacao zerava o caminho para forcar "Salvar como",
+        // mas e desse caminho que as imagens sao lidas sob demanda. O resultado
+        // era uma gravacao recuperada sem nenhuma captura, e um autosave que
+        // falhava em seguida por nao conseguir materializar os blobs.
+        let dir = std::env::temp_dir().join(format!("stepeasy-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let rascunho = dir.join("rascunho.stepeasy");
+
+        let mut original = projeto_com_imagem(&dir);
+        original.save_copy_to(&rascunho).unwrap();
+
+        // Abre o rascunho como a recuperacao faz.
+        let mut recuperado = Project::open(&rascunho).unwrap();
+        recuperado.marcar_como_rascunho();
+
+        assert_eq!(
+            recuperado.path(),
+            None,
+            "o rascunho nao pode ser oferecido como destino de salvamento"
+        );
+        assert_eq!(
+            recuperado.blob(&image_path(1)).unwrap(),
+            b"conteudo-png",
+            "as imagens continuam vindo do rascunho"
+        );
+
+        // E salvar em outro lugar leva as imagens junto.
+        let destino = dir.join("do-usuario.stepeasy");
+        recuperado.save_as(&destino).unwrap();
+        assert_eq!(recuperado.path(), Some(destino.as_path()));
+
+        let mut relido = Project::open(&destino).unwrap();
+        assert_eq!(relido.blob(&image_path(1)).unwrap(), b"conteudo-png");
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn autosave_de_um_rascunho_recuperado_funciona() {
+        // O sintoma que apareceu em uso: "falha ao salvar rascunho: arquivo
+        // ausente no pacote".
+        let dir = std::env::temp_dir().join(format!("stepeasy-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let mut original = projeto_com_imagem(&dir);
+        original
+            .save_copy_to(dir.join("rascunho.stepeasy"))
+            .unwrap();
+
+        let mut recuperado = Project::open(dir.join("rascunho.stepeasy")).unwrap();
+        recuperado.marcar_como_rascunho();
+        recuperado.touch();
+
+        recuperado
+            .save_copy_to(dir.join("novo-rascunho.stepeasy"))
+            .expect("o autosave precisa conseguir reescrever o rascunho");
 
         std::fs::remove_dir_all(&dir).ok();
     }
