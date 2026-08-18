@@ -1,0 +1,243 @@
+_version: 1
+
+# Idioma de referência do StepEasy. Para traduzir, copie locales/en.yml e
+# traduza os valores — veja TRANSLATING.md.
+
+idioma:
+  nome: Português (Brasil)
+
+comum:
+  salvar: Salvar
+  abrir: Abrir
+  exportar: Exportar
+  cancelar: Cancelar
+  excluir: Excluir
+  duplicar: Duplicar
+  remover: remover
+  dispensar: Dispensar
+  gravar: Gravar
+  editar: Editar
+  passos: "%{n} passo(s)"
+  nao_salvo: não salvo
+
+gravador:
+  titulo: Gravar um passo a passo
+  subtitulo: >-
+    Cada clique e cada trecho digitado vira um passo com captura de tela.
+    Você revisa e reorganiza tudo antes de exportar.
+  escopo_titulo: O que capturar
+  minimizar: Minimizar o StepEasy durante a gravação
+  iniciar: Iniciar gravação
+  continuar: "Continuar a gravação aberta (%{passos} passos)"
+  continuar_dica: Os passos novos entram no fim da gravação, sem apagar os que já existem
+  atalhos: "Durante a gravação: %{parar} encerra, %{pausar} pausa e retoma"
+  atalhos_gravando: "de qualquer lugar: %{parar} encerra, %{pausar} pausa e retoma"
+  gravando: ● Gravando
+  pausado: ❙❙ Pausado
+  capturados: "%{n} passo(s) capturado(s)"
+  acrescentados: "%{n} passo(s) acrescentado(s)"
+  encerrar: Encerrar gravação
+  pausar: Pausar
+  retomar: Retomar
+  pausa_aviso: Nada está sendo capturado enquanto a pausa durar.
+  sem_suporte: >-
+    A captura de entrada ainda não está disponível neste sistema operacional.
+    Você pode abrir e editar gravações existentes.
+  sem_telas: Nenhuma tela foi detectada.
+
+escopo:
+  tela_do_cursor: Tela sob o cursor
+  tela_especifica: Tela específica
+  todas_as_telas: Todas as telas
+  janela_ativa: Janela ativa
+  regiao: Região
+  monitor_principal: " (principal)"
+  ajuda:
+    tela_do_cursor: >-
+      Cada captura pega a tela onde o clique aconteceu. É o modo mais seguro
+      quando você usa mais de um monitor.
+    tela_especifica: Sempre a mesma tela, mesmo que o clique aconteça em outra.
+    todas_as_telas: Todas as telas lado a lado numa imagem só. Gera arquivos grandes.
+    janela_ativa: >-
+      Só a janela em foco entra na imagem, sem área de trabalho nem barra de
+      tarefas. Cliques em menus suspensos caem para a tela inteira.
+    regiao: Sempre a mesma região da tela.
+
+editor:
+  sem_gravacao: Nenhuma gravação aberta.
+  selecione_passo: Selecione um passo na timeline.
+  sem_imagem: Este passo não tem imagem.
+  imagem_ilegivel: A imagem deste passo não pôde ser lida.
+  sem_texto: (sem texto)
+  gravacao: Gravação
+  descricao_dica: Descrição (opcional)
+  passo: "Passo %{n}"
+  texto_do_passo: Texto do passo
+  observacoes: Observações
+  observacoes_dica: Aparece como citação no export
+  texto_automatico: Voltar ao texto automático
+  detectado: Detectado
+  controle: Controle
+  tipo: Tipo
+  janela: Janela
+  programa: Programa
+  escopo_fallback: Este passo saiu do escopo escolhido — foi capturada a tela inteira.
+  mesclar: "Mesclar %{n}"
+  mesclar_dica: Junta os passos selecionados em um só
+  inserir_dica: Inserir um passo escrito à mão
+  novo_passo: Novo passo
+  mover_cima: Mover o passo para cima
+  mover_baixo: Mover o passo para baixo
+  arraste_timeline: ou arraste na timeline
+  desfazer: Desfazer (Ctrl+Z)
+  desfazer_com: "Desfazer: %{acao} (Ctrl+Z)"
+  refazer: Refazer (Ctrl+Shift+Z)
+  refazer_com: "Refazer: %{acao} (Ctrl+Shift+Z)"
+
+anotacao:
+  titulo: "Anotações (%{n})"
+  vazio: Use a barra acima da captura para marcar a imagem.
+  seta: Seta
+  retangulo: Retângulo
+  borrao: Borrão
+  texto: Texto
+  selecionar: Selecionar
+  texto_padrao: Texto
+  espessura: Espessura
+  intensidade: Intensidade
+  tamanho: Tamanho
+  ajuda:
+    selecionar: Clique numa anotação para editá-la; arraste para mover
+    seta: Arraste de onde a seta começa até onde ela aponta
+    retangulo: Arraste para cercar uma região
+    borrao: "Arraste sobre o que precisa sumir (senha, CPF, nome)"
+    texto: Clique onde o texto deve começar
+
+acao:
+  reordenar: Reordenar
+  excluir_passo: Excluir passo
+  excluir_passos: Excluir passos
+  duplicar_passo: Duplicar passo
+  mesclar_passos: Mesclar passos
+  inserir_passo: Inserir passo
+  editar_texto: Editar texto
+  editar_observacoes: Editar observações
+  editar_titulo: Editar título
+  editar_descricao: Editar descrição
+  restaurar_texto: Restaurar texto automático
+  continuar_gravacao: Continuar gravação
+  adicionar_anotacao: "Adicionar %{tipo}"
+  ajustar_anotacao: Ajustar anotação
+  remover_anotacao: Remover anotação
+
+dialogo:
+  sair_titulo: Sair sem salvar?
+  sair_texto: >-
+    Esta gravação tem %{n} passo(s) com alterações não salvas. Fechar agora
+    perde o que não estiver no arquivo.
+  sair_salvar: Salvar e sair
+  sair_sem_salvar: Sair sem salvar
+  recuperar_titulo: Encontramos uma gravação não salva
+  recuperar_texto: >-
+    O StepEasy guarda um rascunho enquanto você grava e edita. O da sessão
+    anterior não chegou a ser salvo em arquivo.
+  recuperar: Recuperar
+  descartar: Descartar
+  depois: Decidir depois
+
+aviso:
+  gravacao_padrao: "Gravação de %{data}"
+  arquivo_gravacao: Gravação StepEasy
+  salvo_em: "salvo em %{arquivo}"
+  aberto: "aberto: %{arquivo}"
+  exportado: "exportado para %{caminho}"
+  recuperada: gravação recuperada — use Salvar para guardá-la onde quiser
+  pausada: "gravação pausada — %{atalho} para retomar"
+  retomada: gravação retomada
+  nada_capturado: nenhum passo foi capturado — nada aconteceu durante a gravação?
+  capturados: "%{n} passo(s) capturado(s). Revise e salve."
+  acrescentados: "%{n} passo(s) acrescentado(s) ao fim da gravação."
+  substituira: há alterações não salvas; elas serão substituídas pela nova gravação
+  desfeito: "desfeito: %{acao}"
+  refeito: "refeito: %{acao}"
+  nada_desfazer: nada para desfazer
+  nada_refazer: nada para refazer
+  sem_suporte: a gravação ainda não está disponível neste sistema operacional
+  erro_gravar: "não foi possível gravar: %{erro}"
+  erro_abrir: "não foi possível abrir: %{erro}"
+  erro_salvar: "não foi possível salvar: %{erro}"
+  erro_exportar: "falha ao exportar: %{erro}"
+  tema_claro: Mudar para o tema claro
+  tema_escuro: Mudar para o tema escuro
+  idioma: Idioma
+
+tipo_passo:
+  clique: clique
+  duplo_clique: duplo clique
+  arrasto: arrasto
+  digitacao: digitação
+  atalho: atalho
+  rolagem: rolagem
+  manual: escrito à mão
+  agrupado: agrupado
+
+legenda:
+  botao:
+    esquerdo: esquerdo
+    direito: direito
+    meio: do meio
+  direcao:
+    cima: para cima
+    baixo: para baixo
+    esquerda: para a esquerda
+    direita: para a direita
+  alvo:
+    com_nome: "%{tipo} **%{nome}**"
+    so_tipo: "%{tipo}"
+    so_nome: "em **%{nome}**"
+  janela: "%{frase} da janela **%{janela}**"
+  clique: "Clicou com o botão %{botao} %{alvo}"
+  clique_em: "Clicou com o botão %{botao} em (%{x}, %{y})"
+  clique_sem_alvo: "Clicou com o botão %{botao}"
+  duplo_clique: "Clicou duas vezes com o botão %{botao} %{alvo}"
+  duplo_clique_em: "Clicou duas vezes com o botão %{botao} em (%{x}, %{y})"
+  duplo_clique_sem_alvo: "Clicou duas vezes com o botão %{botao}"
+  arrasto: "Arrastou com o botão %{botao} de (%{x}, %{y}) até (%{x2}, %{y2})"
+  arrasto_sem_origem: "Arrastou com o botão %{botao} até (%{x2}, %{y2})"
+  digitou: 'Digitou "%{texto}" %{alvo}'
+  digitou_sem_alvo: 'Digitou "%{texto}"'
+  tecla: "Pressionou %{combo}"
+  rolagem: "Rolou a tela %{direcao} %{alvo}"
+  rolagem_sem_alvo: "Rolou a tela %{direcao}"
+  agrupado: "%{n} ações agrupadas"
+  controle:
+    botao: no botão
+    caixa_selecao: na caixa de seleção
+    caixa_combinacao: na caixa de combinação
+    caixa_edicao: na caixa de edição
+    link: no link
+    imagem: na imagem
+    item_lista: no item de lista
+    lista: na lista
+    menu: no menu
+    barra_menus: na barra de menus
+    item_menu: no item de menu
+    opcao: na opção
+    barra_rolagem: na barra de rolagem
+    conjunto_guias: no conjunto de guias
+    guia: na guia
+    texto: no texto
+    barra_ferramentas: na barra de ferramentas
+    arvore: na árvore
+    item_arvore: no item da árvore
+    janela: na janela
+    item: no item
+    tabela: na tabela
+    documento: no documento
+    botao_divisao: no botão de divisão
+    deslizante: no controle deslizante
+    seletor_numerico: no seletor numérico
+    barra_progresso: na barra de progresso
+    grupo: no grupo
+    painel: no painel
+    elemento: no elemento

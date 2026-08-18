@@ -3,6 +3,11 @@
 //! Esta crate não conhece nem plataforma nem interface — é o que permite
 //! testar toda a lógica de edição e de arquivo sem abrir uma janela.
 
+// Os textos ficam em `locales/`, na raiz do workspace, compartilhados com a
+// interface. Um arquivo por idioma: traduzir e copiar `en.yml` e trocar os
+// valores, sem tocar em Rust. Veja TRANSLATING.md.
+rust_i18n::i18n!("../../locales", fallback = "en");
+
 pub mod bundle;
 pub mod caption;
 pub mod edit;

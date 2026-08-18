@@ -41,7 +41,10 @@ impl UiProbe for WindowsProbe {
                     .map(|s| s.to_string())
                     .filter(|s| !s.trim().is_empty());
 
-                target.control_type = element.CurrentControlType().ok().map(control_type_name);
+                target.control_type = element
+                    .CurrentControlType()
+                    .ok()
+                    .map(|id| control_type_key(id).to_string());
 
                 if let Ok(rect) = element.CurrentBoundingRectangle() {
                     let width = (rect.right - rect.left).max(0) as u32;
@@ -90,44 +93,49 @@ fn element_at(point: Point) -> Option<IUIAutomationElement> {
     })
 }
 
-/// Traduz o id de tipo de controle do UIA para o termo usado nas legendas.
+/// Converte o id de tipo de controle do UIA na **chave** usada pelas
+/// traduções.
+///
+/// De propósito não devolve texto pronto: o texto é escolhido na hora de
+/// montar a legenda, no idioma ativo. Devolver "botão" aqui prenderia toda a
+/// gravação ao português — inclusive dentro do arquivo salvo.
+/// A lista de chaves válidas está em `stepeasy_core::caption::CONTROLES`.
 // As constantes do UIA usam camel case; casar com elas exige silenciar o lint.
 #[allow(non_upper_case_globals)]
-fn control_type_name(id: windows::Win32::UI::Accessibility::UIA_CONTROLTYPE_ID) -> String {
+fn control_type_key(id: windows::Win32::UI::Accessibility::UIA_CONTROLTYPE_ID) -> &'static str {
     use windows::Win32::UI::Accessibility::*;
 
-    let nome = match id {
-        UIA_ButtonControlTypeId => "botão",
-        UIA_CheckBoxControlTypeId => "caixa de seleção",
-        UIA_ComboBoxControlTypeId => "caixa de combinação",
-        UIA_EditControlTypeId => "caixa de edição",
+    match id {
+        UIA_ButtonControlTypeId => "botao",
+        UIA_CheckBoxControlTypeId => "caixa_selecao",
+        UIA_ComboBoxControlTypeId => "caixa_combinacao",
+        UIA_EditControlTypeId => "caixa_edicao",
         UIA_HyperlinkControlTypeId => "link",
         UIA_ImageControlTypeId => "imagem",
-        UIA_ListItemControlTypeId => "item de lista",
+        UIA_ListItemControlTypeId => "item_lista",
         UIA_ListControlTypeId => "lista",
         UIA_MenuControlTypeId => "menu",
-        UIA_MenuBarControlTypeId => "barra de menus",
-        UIA_MenuItemControlTypeId => "item de menu",
-        UIA_RadioButtonControlTypeId => "opção",
-        UIA_ScrollBarControlTypeId => "barra de rolagem",
-        UIA_TabControlTypeId => "conjunto de guias",
+        UIA_MenuBarControlTypeId => "barra_menus",
+        UIA_MenuItemControlTypeId => "item_menu",
+        UIA_RadioButtonControlTypeId => "opcao",
+        UIA_ScrollBarControlTypeId => "barra_rolagem",
+        UIA_TabControlTypeId => "conjunto_guias",
         UIA_TabItemControlTypeId => "guia",
         UIA_TextControlTypeId => "texto",
-        UIA_ToolBarControlTypeId => "barra de ferramentas",
-        UIA_TreeControlTypeId => "árvore",
-        UIA_TreeItemControlTypeId => "item da árvore",
+        UIA_ToolBarControlTypeId => "barra_ferramentas",
+        UIA_TreeControlTypeId => "arvore",
+        UIA_TreeItemControlTypeId => "item_arvore",
         UIA_WindowControlTypeId => "janela",
         UIA_DataItemControlTypeId => "item",
         UIA_DataGridControlTypeId => "tabela",
         UIA_TableControlTypeId => "tabela",
         UIA_DocumentControlTypeId => "documento",
-        UIA_SplitButtonControlTypeId => "botão de divisão",
-        UIA_SliderControlTypeId => "controle deslizante",
-        UIA_SpinnerControlTypeId => "seletor numérico",
-        UIA_ProgressBarControlTypeId => "barra de progresso",
+        UIA_SplitButtonControlTypeId => "botao_divisao",
+        UIA_SliderControlTypeId => "deslizante",
+        UIA_SpinnerControlTypeId => "seletor_numerico",
+        UIA_ProgressBarControlTypeId => "barra_progresso",
         UIA_GroupControlTypeId => "grupo",
         UIA_PaneControlTypeId => "painel",
         _ => "elemento",
-    };
-    nome.to_string()
+    }
 }

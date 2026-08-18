@@ -6,6 +6,7 @@
 //! o histórico de undo é alimentado.
 
 use egui::{Align, Layout, RichText, Sense, Vec2};
+use rust_i18n::t;
 use stepeasy_core::edit;
 use stepeasy_core::model::{Annotation, StepKind};
 use uuid::Uuid;
@@ -65,7 +66,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     if app.project.is_none() {
         egui::CentralPanel::default().show(ui, |ui| {
             ui.centered_and_justified(|ui| {
-                ui.label("Nenhuma gravação aberta.");
+                ui.label(t!("editor.sem_gravacao"));
             });
         });
         return;
@@ -101,8 +102,8 @@ fn timeline(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             let dica = app
                 .history
                 .undo_label()
-                .map(|l| format!("Desfazer: {l} (Ctrl+Z)"))
-                .unwrap_or_else(|| "Desfazer (Ctrl+Z)".into());
+                .map(|l| t!("editor.desfazer_com", acao = l).to_string())
+                .unwrap_or_else(|| t!("editor.desfazer").to_string());
             if icons::button(ui, Icon::Undo).on_hover_text(dica).clicked() {
                 app.undo();
             }
@@ -111,15 +112,15 @@ fn timeline(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             let dica = app
                 .history
                 .redo_label()
-                .map(|l| format!("Refazer: {l} (Ctrl+Shift+Z)"))
-                .unwrap_or_else(|| "Refazer (Ctrl+Shift+Z)".into());
+                .map(|l| t!("editor.refazer_com", acao = l).to_string())
+                .unwrap_or_else(|| t!("editor.refazer").to_string());
             if icons::button(ui, Icon::Redo).on_hover_text(dica).clicked() {
                 app.redo();
             }
         });
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             if icons::button(ui, Icon::Plus)
-                .on_hover_text("Inserir um passo escrito à mão")
+                .on_hover_text(t!("editor.inserir_dica"))
                 .clicked()
             {
                 actions.push(Action::InsertManual);
@@ -260,7 +261,7 @@ fn miniatura(app: &mut App, ui: &mut egui::Ui, path: &str) {
 fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut Vec<Action>) {
     let Some(id) = app.focused else {
         ui.centered_and_justified(|ui| {
-            ui.label(RichText::new("Selecione um passo na timeline.").color(palette.muted));
+            ui.label(RichText::new(t!("editor.selecione_passo")).color(palette.muted));
         });
         return;
     };
@@ -284,7 +285,7 @@ fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut Ve
 
     let Some(path) = image_path else {
         ui.centered_and_justified(|ui| {
-            ui.label(RichText::new("Este passo não tem imagem.").color(palette.muted));
+            ui.label(RichText::new(t!("editor.sem_imagem")).color(palette.muted));
         });
         return;
     };
@@ -307,7 +308,7 @@ fn captura(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut Ve
     };
 
     let Some(textura) = textura else {
-        ui.label(RichText::new("A imagem deste passo não pôde ser lida.").color(palette.accent));
+        ui.label(RichText::new(t!("editor.imagem_ilegivel")).color(palette.accent));
         return;
     };
 
@@ -357,7 +358,7 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
         .auto_shrink([false, false])
         .show(ui, |ui| {
             ui.add_space(6.0);
-            ui.label(RichText::new("Gravação").strong());
+            ui.label(RichText::new(t!("editor.gravacao")).strong());
 
             let (mut titulo, mut descricao) = {
                 let rec = &app.project.as_ref().unwrap().recording;
@@ -373,7 +374,7 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
                 .add(
                     egui::TextEdit::multiline(&mut descricao)
                         .desired_rows(2)
-                        .hint_text("Descrição (opcional)")
+                        .hint_text(t!("editor.descricao_dica"))
                         .desired_width(f32::INFINITY),
                 )
                 .changed()
@@ -385,7 +386,7 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             ui.separator();
 
             let Some(id) = app.focused else {
-                ui.label(RichText::new("Nenhum passo selecionado.").color(palette.muted));
+                ui.label(RichText::new(t!("editor.selecione_passo")).color(palette.muted));
                 return;
             };
             let Some(step) = app
@@ -399,7 +400,7 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
 
             ui.add_space(6.0);
             ui.horizontal(|ui| {
-                ui.label(RichText::new(format!("Passo {}", step.index)).strong());
+                ui.label(RichText::new(t!("editor.passo", n = step.index)).strong());
                 ui.label(
                     RichText::new(descricao_do_tipo(&step.kind))
                         .size(11.0)
@@ -409,17 +410,15 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
 
             if step.scope_fallback {
                 ui.label(
-                    RichText::new(
-                        "Este passo saiu do escopo escolhido — foi capturada a tela inteira.",
-                    )
-                    .size(11.0)
-                    .color(palette.accent),
+                    RichText::new(t!("editor.escopo_fallback"))
+                        .size(11.0)
+                        .color(palette.accent),
                 );
             }
 
             ui.add_space(8.0);
             ui.label(
-                RichText::new("Texto do passo")
+                RichText::new(t!("editor.texto_do_passo"))
                     .size(12.0)
                     .color(palette.muted),
             );
@@ -436,19 +435,23 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             }
             if step.caption_edited
                 && !matches!(step.kind, StepKind::Manual)
-                && ui.small_button("Voltar ao texto automático").clicked()
+                && ui.small_button(t!("editor.texto_automatico")).clicked()
             {
                 actions.push(Action::ResetCaption(id));
             }
 
             ui.add_space(8.0);
-            ui.label(RichText::new("Observações").size(12.0).color(palette.muted));
+            ui.label(
+                RichText::new(t!("editor.observacoes"))
+                    .size(12.0)
+                    .color(palette.muted),
+            );
             let mut notes = step.notes.clone();
             if ui
                 .add(
                     egui::TextEdit::multiline(&mut notes)
                         .desired_rows(2)
-                        .hint_text("Aparece como citação no export")
+                        .hint_text(t!("editor.observacoes_dica"))
                         .desired_width(f32::INFINITY),
                 )
                 .changed()
@@ -458,12 +461,19 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
 
             if let Some(target) = &step.target {
                 ui.add_space(10.0);
-                ui.label(RichText::new("Detectado").size(12.0).color(palette.muted));
+                ui.label(
+                    RichText::new(t!("editor.detectado"))
+                        .size(12.0)
+                        .color(palette.muted),
+                );
                 for (rotulo, valor) in [
-                    ("Controle", target.name.clone()),
-                    ("Tipo", target.control_type.clone()),
-                    ("Janela", target.window_title.clone()),
-                    ("Programa", target.process_name.clone()),
+                    (t!("editor.controle"), target.name.clone()),
+                    (
+                        t!("editor.tipo"),
+                        target.control_type.as_deref().map(tipo_traduzido),
+                    ),
+                    (t!("editor.janela"), target.window_title.clone()),
+                    (t!("editor.programa"), target.process_name.clone()),
                 ] {
                     if let Some(valor) = valor {
                         ui.label(
@@ -483,16 +493,16 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
 
             let selecionados = app.selection.len().max(1);
             ui.horizontal_wrapped(|ui| {
-                if ui.button("Excluir").clicked() {
+                if ui.button(t!("comum.excluir")).clicked() {
                     actions.push(Action::Delete);
                 }
-                if ui.button("Duplicar").clicked() {
+                if ui.button(t!("comum.duplicar")).clicked() {
                     actions.push(Action::Duplicate(id));
                 }
                 ui.add_enabled_ui(selecionados > 1, |ui| {
                     if ui
-                        .button(format!("Mesclar {selecionados}"))
-                        .on_hover_text("Junta os passos selecionados em um só")
+                        .button(t!("editor.mesclar", n = selecionados))
+                        .on_hover_text(t!("editor.mesclar_dica"))
                         .clicked()
                     {
                         actions.push(Action::Merge);
@@ -503,19 +513,19 @@ fn detalhes(app: &mut App, ui: &mut egui::Ui, palette: &Palette, actions: &mut V
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 if icons::button(ui, Icon::ChevronUp)
-                    .on_hover_text("Mover o passo para cima")
+                    .on_hover_text(t!("editor.mover_cima"))
                     .clicked()
                 {
                     actions.push(Action::MoveSelectedBy(-1));
                 }
                 if icons::button(ui, Icon::ChevronDown)
-                    .on_hover_text("Mover o passo para baixo")
+                    .on_hover_text(t!("editor.mover_baixo"))
                     .clicked()
                 {
                     actions.push(Action::MoveSelectedBy(1));
                 }
                 ui.label(
-                    RichText::new("ou arraste na timeline")
+                    RichText::new(t!("editor.arraste_timeline"))
                         .size(11.0)
                         .color(palette.muted),
                 );
@@ -543,7 +553,7 @@ fn aplicar(app: &mut App, action: Action) {
         Action::Select { id, ctrl, shift } => selecionar(app, id, ctrl, shift),
 
         Action::Move { from, to } => {
-            app.edit("Reordenar", |rec| edit::move_step(rec, from, to));
+            app.edit(&t!("acao.reordenar"), |rec| edit::move_step(rec, from, to));
         }
 
         Action::MoveSelectedBy(delta) => {
@@ -560,7 +570,7 @@ fn aplicar(app: &mut App, action: Action) {
             if destino < 0 || destino >= total as i32 {
                 return;
             }
-            app.edit("Reordenar", |rec| {
+            app.edit(&t!("acao.reordenar"), |rec| {
                 edit::move_step(rec, pos, destino as usize)
             });
         }
@@ -571,18 +581,20 @@ fn aplicar(app: &mut App, action: Action) {
                 return;
             }
             let rotulo = if ids.len() > 1 {
-                "Excluir passos"
+                t!("acao.excluir_passos")
             } else {
-                "Excluir passo"
+                t!("acao.excluir_passo")
             };
-            app.edit(rotulo, |rec| edit::delete_steps(rec, &ids));
+            app.edit(&rotulo, |rec| edit::delete_steps(rec, &ids));
             app.selection.clear();
             app.focused = None;
             app.sanitize_selection();
         }
 
         Action::Duplicate(id) => {
-            let novo = app.edit("Duplicar passo", |rec| edit::duplicate_step(rec, id));
+            let novo = app.edit(&t!("acao.duplicar_passo"), |rec| {
+                edit::duplicate_step(rec, id)
+            });
             if let Some(Some(novo)) = novo {
                 app.focused = Some(novo);
                 app.selection = vec![novo];
@@ -594,7 +606,9 @@ fn aplicar(app: &mut App, action: Action) {
             if ids.len() < 2 {
                 return;
             }
-            let resultado = app.edit("Mesclar passos", |rec| edit::merge_steps(rec, &ids));
+            let resultado = app.edit(&t!("acao.mesclar_passos"), |rec| {
+                edit::merge_steps(rec, &ids)
+            });
             if let Some(Some(id)) = resultado {
                 app.focused = Some(id);
                 app.selection = vec![id];
@@ -611,8 +625,8 @@ fn aplicar(app: &mut App, action: Action) {
                 })
                 .map(|p| p + 1)
                 .unwrap_or(0);
-            let novo = app.edit("Inserir passo", |rec| {
-                edit::insert_manual(rec, pos, "Novo passo")
+            let novo = app.edit(&t!("acao.inserir_passo"), |rec| {
+                edit::insert_manual(rec, pos, t!("editor.novo_passo"))
             });
             if let Some(id) = novo {
                 app.focused = Some(id);
@@ -621,11 +635,13 @@ fn aplicar(app: &mut App, action: Action) {
         }
 
         Action::SetCaption { id, text } => {
-            app.edit("Editar texto", |rec| edit::set_caption(rec, id, text));
+            app.edit(&t!("acao.editar_texto"), |rec| {
+                edit::set_caption(rec, id, text)
+            });
         }
 
         Action::SetNotes { id, text } => {
-            app.edit("Editar observações", |rec| {
+            app.edit(&t!("acao.editar_observacoes"), |rec| {
                 if let Some(step) = rec.step_by_id_mut(id) {
                     step.notes = text;
                 }
@@ -633,21 +649,24 @@ fn aplicar(app: &mut App, action: Action) {
         }
 
         Action::ResetCaption(id) => {
-            app.edit("Restaurar texto automático", |rec| {
+            app.edit(&t!("acao.restaurar_texto"), |rec| {
                 edit::reset_caption(rec, id)
             });
         }
 
         Action::SetTitle(text) => {
-            app.edit("Editar título", |rec| rec.title = text);
+            app.edit(&t!("acao.editar_titulo"), |rec| rec.title = text);
         }
 
         Action::SetDescription(text) => {
-            app.edit("Editar descrição", |rec| rec.description = text);
+            app.edit(&t!("acao.editar_descricao"), |rec| rec.description = text);
         }
 
         Action::AddAnnotation { step, annotation } => {
-            let rotulo = format!("Adicionar {}", annotation.label().to_lowercase());
+            let rotulo = t!(
+                "acao.adicionar_anotacao",
+                tipo = annotation.label().to_lowercase()
+            );
             let indice = app.edit(&rotulo, |rec| {
                 rec.step_by_id_mut(step).map(|s| {
                     s.annotations.push(annotation);
@@ -667,7 +686,7 @@ fn aplicar(app: &mut App, action: Action) {
             // Arrastar e mexer no controle deslizante geram uma ação por
             // quadro; agrupar pelo mesmo rótulo evita encher o histórico com
             // dezenas de passos de um gesto só.
-            app.edit("Ajustar anotação", |rec| {
+            app.edit(&t!("acao.ajustar_anotacao"), |rec| {
                 if let Some(alvo) = rec
                     .step_by_id_mut(step)
                     .and_then(|s| s.annotations.get_mut(index))
@@ -678,7 +697,7 @@ fn aplicar(app: &mut App, action: Action) {
         }
 
         Action::DeleteAnnotation { step, index } => {
-            app.edit("Remover anotação", |rec| {
+            app.edit(&t!("acao.remover_anotacao"), |rec| {
                 if let Some(s) = rec.step_by_id_mut(step) {
                     if index < s.annotations.len() {
                         s.annotations.remove(index);
@@ -746,21 +765,36 @@ fn primeira_linha(texto: &str) -> String {
         let corte: String = limpo.chars().take(57).collect();
         format!("{corte}…")
     } else if limpo.is_empty() {
-        "(sem texto)".to_string()
+        t!("editor.sem_texto").to_string()
     } else {
         limpo
     }
 }
 
-fn descricao_do_tipo(kind: &StepKind) -> &'static str {
+fn descricao_do_tipo(kind: &StepKind) -> String {
     match kind {
-        StepKind::Click { .. } => "clique",
-        StepKind::DoubleClick { .. } => "duplo clique",
-        StepKind::Drag { .. } => "arrasto",
-        StepKind::Type { .. } => "digitação",
-        StepKind::Key { .. } => "atalho",
-        StepKind::Scroll { .. } => "rolagem",
-        StepKind::Manual => "escrito à mão",
-        StepKind::Merged { .. } => "agrupado",
+        StepKind::Click { .. } => t!("tipo_passo.clique"),
+        StepKind::DoubleClick { .. } => t!("tipo_passo.duplo_clique"),
+        StepKind::Drag { .. } => t!("tipo_passo.arrasto"),
+        StepKind::Type { .. } => t!("tipo_passo.digitacao"),
+        StepKind::Key { .. } => t!("tipo_passo.atalho"),
+        StepKind::Scroll { .. } => t!("tipo_passo.rolagem"),
+        StepKind::Manual => t!("tipo_passo.manual"),
+        StepKind::Merged { .. } => t!("tipo_passo.agrupado"),
+    }
+    .to_string()
+}
+
+/// Traduz a chave de tipo de controle vinda da acessibilidade.
+///
+/// O passo guarda a chave, nunca o texto: um `.stepeasy` gravado em
+/// portugues precisa mostrar "button" para quem usa a interface em ingles.
+fn tipo_traduzido(chave: &str) -> String {
+    let key = format!("legenda.controle.{chave}");
+    let texto = t!(&key).to_string();
+    if texto.contains("legenda.controle") {
+        t!("legenda.controle.elemento").to_string()
+    } else {
+        texto
     }
 }

@@ -28,3 +28,9 @@ egui_extras = { version = "0.36", features = ["image"] }
 egui_dnd = "0.17"
 rfd = "0.17"
 crossbeam-channel.workspace = true
+rust-i18n = "4.2.1"
+
+# So para perguntar ao Windows qual e o idioma do usuario na primeira abertura.
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.61"
+features = ["Win32_Globalization"]

@@ -208,16 +208,6 @@ pub enum MouseButton {
     Middle,
 }
 
-impl MouseButton {
-    pub fn label(&self) -> &'static str {
-        match self {
-            Self::Left => "esquerdo",
-            Self::Right => "direito",
-            Self::Middle => "do meio",
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ScrollDirection {
@@ -225,17 +215,6 @@ pub enum ScrollDirection {
     Down,
     Left,
     Right,
-}
-
-impl ScrollDirection {
-    pub fn label(&self) -> &'static str {
-        match self {
-            Self::Up => "para cima",
-            Self::Down => "para baixo",
-            Self::Left => "para a esquerda",
-            Self::Right => "para a direita",
-        }
-    }
 }
 
 /// Referência a uma imagem dentro do pacote `.stepeasy`.
@@ -259,7 +238,12 @@ pub struct UiTarget {
     /// Nome do controle ("Salvar", "Nome do arquivo:").
     #[serde(default)]
     pub name: Option<String>,
-    /// Tipo do controle já traduzido ("botão", "campo de texto").
+    /// Chave do tipo de controle, como `botao` ou `caixa_edicao`.
+    ///
+    /// Guarda a **chave**, não o texto: o pacote precisa continuar legível
+    /// quando aberto em outro idioma, e um `.stepeasy` gravado em português
+    /// deve mostrar "button" para quem usa a interface em inglês.
+    /// A lista completa está em [`crate::caption::CONTROLES`].
     #[serde(default)]
     pub control_type: Option<String>,
     /// Título da janela de nível superior.
@@ -315,14 +299,15 @@ pub enum Annotation {
 }
 
 impl Annotation {
-    /// Nome da ferramenta, para a lista do editor.
-    pub fn label(&self) -> &'static str {
+    /// Nome da ferramenta, no idioma ativo.
+    pub fn label(&self) -> String {
         match self {
-            Self::Rect { .. } => "Retângulo",
-            Self::Arrow { .. } => "Seta",
-            Self::Text { .. } => "Texto",
-            Self::Blur { .. } => "Borrão",
+            Self::Rect { .. } => rust_i18n::t!("anotacao.retangulo"),
+            Self::Arrow { .. } => rust_i18n::t!("anotacao.seta"),
+            Self::Text { .. } => rust_i18n::t!("anotacao.texto"),
+            Self::Blur { .. } => rust_i18n::t!("anotacao.borrao"),
         }
+        .to_string()
     }
 
     /// Retângulo que a anotação ocupa, para acerto de clique e para mover.

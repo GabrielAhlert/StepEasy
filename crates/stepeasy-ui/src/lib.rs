@@ -1,8 +1,13 @@
 //! Interface do StepEasy.
 
+// Mesma pasta de textos que a `stepeasy-core` usa. O idioma ativo e um global
+// do `rust-i18n`, entao trocar aqui muda tambem as legendas geradas la.
+rust_i18n::i18n!("../../locales", fallback = "en");
+
 mod annotate;
 mod app;
 pub mod icons;
+pub mod idioma;
 mod recovery;
 mod screens;
 mod textures;

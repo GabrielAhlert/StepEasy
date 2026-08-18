@@ -1,0 +1,247 @@
+_version: 1
+
+# Reference file for translators. Copy this file to your language code
+# (es.yml, de.yml, fr.yml…) and translate the values, never the keys.
+# See TRANSLATING.md.
+
+idioma:
+  nome: English
+
+comum:
+  salvar: Save
+  abrir: Open
+  exportar: Export
+  cancelar: Cancel
+  excluir: Delete
+  duplicar: Duplicate
+  remover: remove
+  dispensar: Dismiss
+  gravar: Record
+  editar: Edit
+  passos: "%{n} step(s)"
+  nao_salvo: unsaved
+
+gravador:
+  titulo: Record a step-by-step guide
+  subtitulo: >-
+    Every click and every phrase you type becomes a step with a screenshot.
+    You review and rearrange everything before exporting.
+  escopo_titulo: What to capture
+  minimizar: Minimise StepEasy while recording
+  iniciar: Start recording
+  continuar: "Continue the open recording (%{passos} steps)"
+  continuar_dica: New steps are appended to the end; nothing existing is removed
+  atalhos: "While recording: %{parar} stops, %{pausar} pauses and resumes"
+  atalhos_gravando: "from anywhere: %{parar} stops, %{pausar} pauses and resumes"
+  gravando: ● Recording
+  pausado: ❙❙ Paused
+  capturados: "%{n} step(s) captured"
+  acrescentados: "%{n} step(s) appended"
+  encerrar: Stop recording
+  pausar: Pause
+  retomar: Resume
+  pausa_aviso: Nothing is being captured while paused.
+  sem_suporte: >-
+    Input capture is not available on this operating system yet. You can still
+    open and edit existing recordings.
+  sem_telas: No screen was detected.
+
+escopo:
+  tela_do_cursor: Screen under the cursor
+  tela_especifica: Specific screen
+  todas_as_telas: All screens
+  janela_ativa: Active window
+  regiao: Region
+  monitor_principal: " (primary)"
+  ajuda:
+    tela_do_cursor: >-
+      Each capture takes the screen where the click happened. The safest mode
+      when you use more than one monitor.
+    tela_especifica: Always the same screen, even if the click happens on another.
+    todas_as_telas: All screens side by side in a single image. Produces large files.
+    janela_ativa: >-
+      Only the focused window is captured, with no desktop and no taskbar.
+      Clicks on drop-down menus fall back to the whole screen.
+    regiao: Always the same region of the screen.
+
+editor:
+  sem_gravacao: No recording open.
+  selecione_passo: Select a step in the timeline.
+  sem_imagem: This step has no image.
+  imagem_ilegivel: The image for this step could not be read.
+  sem_texto: (no text)
+  gravacao: Recording
+  descricao_dica: Description (optional)
+  passo: "Step %{n}"
+  texto_do_passo: Step text
+  observacoes: Notes
+  observacoes_dica: Appears as a quote in the export
+  texto_automatico: Back to the automatic text
+  detectado: Detected
+  controle: Control
+  tipo: Type
+  janela: Window
+  programa: Program
+  escopo_fallback: This step fell outside the chosen scope — the whole screen was captured.
+  mesclar: "Merge %{n}"
+  mesclar_dica: Joins the selected steps into one
+  inserir_dica: Insert a hand-written step
+  novo_passo: New step
+  mover_cima: Move the step up
+  mover_baixo: Move the step down
+  arraste_timeline: or drag it in the timeline
+  desfazer: Undo (Ctrl+Z)
+  desfazer_com: "Undo: %{acao} (Ctrl+Z)"
+  refazer: Redo (Ctrl+Shift+Z)
+  refazer_com: "Redo: %{acao} (Ctrl+Shift+Z)"
+
+anotacao:
+  titulo: "Annotations (%{n})"
+  vazio: Use the toolbar above the capture to mark up the image.
+  seta: Arrow
+  retangulo: Rectangle
+  borrao: Blur
+  texto: Text
+  selecionar: Select
+  texto_padrao: Text
+  espessura: Thickness
+  intensidade: Strength
+  tamanho: Size
+  ajuda:
+    selecionar: Click an annotation to edit it; drag to move it
+    seta: Drag from where the arrow starts to what it points at
+    retangulo: Drag to frame a region
+    borrao: Drag over what must disappear (password, ID number, name)
+    texto: Click where the text should start
+
+acao:
+  reordenar: Reorder
+  excluir_passo: Delete step
+  excluir_passos: Delete steps
+  duplicar_passo: Duplicate step
+  mesclar_passos: Merge steps
+  inserir_passo: Insert step
+  editar_texto: Edit text
+  editar_observacoes: Edit notes
+  editar_titulo: Edit title
+  editar_descricao: Edit description
+  restaurar_texto: Restore automatic text
+  continuar_gravacao: Continue recording
+  adicionar_anotacao: "Add %{tipo}"
+  ajustar_anotacao: Adjust annotation
+  remover_anotacao: Remove annotation
+
+dialogo:
+  sair_titulo: Quit without saving?
+  sair_texto: >-
+    This recording has %{n} step(s) with unsaved changes. Closing now loses
+    whatever is not in the file.
+  sair_salvar: Save and quit
+  sair_sem_salvar: Quit without saving
+  recuperar_titulo: We found an unsaved recording
+  recuperar_texto: >-
+    StepEasy keeps a draft while you record and edit. The one from the previous
+    session was never saved to a file.
+  recuperar: Recover
+  descartar: Discard
+  depois: Decide later
+
+aviso:
+  gravacao_padrao: "Recording of %{data}"
+  arquivo_gravacao: StepEasy recording
+  salvo_em: "saved to %{arquivo}"
+  aberto: "opened: %{arquivo}"
+  exportado: "exported to %{caminho}"
+  recuperada: recording recovered — use Save to store it where you want
+  pausada: "recording paused — %{atalho} to resume"
+  retomada: recording resumed
+  nada_capturado: no step was captured — did anything happen while recording?
+  capturados: "%{n} step(s) captured. Review and save."
+  acrescentados: "%{n} step(s) appended to the recording."
+  substituira: there are unsaved changes; they will be replaced by the new recording
+  desfeito: "undone: %{acao}"
+  refeito: "redone: %{acao}"
+  nada_desfazer: nothing to undo
+  nada_refazer: nothing to redo
+  sem_suporte: recording is not available on this operating system yet
+  erro_gravar: "could not record: %{erro}"
+  erro_abrir: "could not open: %{erro}"
+  erro_salvar: "could not save: %{erro}"
+  erro_exportar: "export failed: %{erro}"
+  tema_claro: Switch to the light theme
+  tema_escuro: Switch to the dark theme
+  idioma: Language
+
+tipo_passo:
+  clique: click
+  duplo_clique: double click
+  arrasto: drag
+  digitacao: typing
+  atalho: shortcut
+  rolagem: scroll
+  manual: hand-written
+  agrupado: grouped
+
+legenda:
+  botao:
+    esquerdo: left
+    direito: right
+    meio: middle
+  direcao:
+    cima: up
+    baixo: down
+    esquerda: left
+    direita: right
+  # In English the article belongs to the target and the type comes after the
+  # name; in Portuguese the preposition is glued to the type and the order is
+  # reversed. That is why whole sentences live here instead of in the code.
+  alvo:
+    com_nome: "the **%{nome}** %{tipo}"
+    so_tipo: "the %{tipo}"
+    so_nome: "**%{nome}**"
+  janela: "%{frase} in the **%{janela}** window"
+  clique: "Clicked %{alvo} with the %{botao} mouse button"
+  clique_em: "Clicked at (%{x}, %{y}) with the %{botao} mouse button"
+  clique_sem_alvo: "Clicked the %{botao} mouse button"
+  duplo_clique: "Double-clicked %{alvo} with the %{botao} mouse button"
+  duplo_clique_em: "Double-clicked at (%{x}, %{y}) with the %{botao} mouse button"
+  duplo_clique_sem_alvo: "Double-clicked the %{botao} mouse button"
+  arrasto: "Dragged with the %{botao} mouse button from (%{x}, %{y}) to (%{x2}, %{y2})"
+  arrasto_sem_origem: "Dragged with the %{botao} mouse button to (%{x2}, %{y2})"
+  digitou: 'Typed "%{texto}" into %{alvo}'
+  digitou_sem_alvo: 'Typed "%{texto}"'
+  tecla: "Pressed %{combo}"
+  rolagem: "Scrolled %{direcao} on %{alvo}"
+  rolagem_sem_alvo: "Scrolled %{direcao}"
+  agrupado: "%{n} actions grouped"
+  controle:
+    botao: button
+    caixa_selecao: check box
+    caixa_combinacao: combo box
+    caixa_edicao: text field
+    link: link
+    imagem: image
+    item_lista: list item
+    lista: list
+    menu: menu
+    barra_menus: menu bar
+    item_menu: menu item
+    opcao: radio button
+    barra_rolagem: scroll bar
+    conjunto_guias: tab strip
+    guia: tab
+    texto: text
+    barra_ferramentas: toolbar
+    arvore: tree
+    item_arvore: tree item
+    janela: window
+    item: item
+    tabela: table
+    documento: document
+    botao_divisao: split button
+    deslizante: slider
+    seletor_numerico: spinner
+    barra_progresso: progress bar
+    grupo: group
+    painel: pane
+    elemento: element

@@ -103,6 +103,7 @@ cargo run -p stepeasy-core --example gravacao_exemplo -- exemplo.stepeasy
 ## Estrutura
 
 ```
+locales/             textos da interface e das legendas, um arquivo por idioma
 crates/
   stepeasy-core/     modelo de dados, formato .stepeasy, exportadores
   stepeasy-capture/  hooks de entrada, screenshot e acessibilidade por plataforma
@@ -132,6 +133,16 @@ release:
 
 A saída vai para `dist/`. No CI a versão vem da tag, então o instalador nunca
 discorda dela.
+
+## Idiomas
+
+A interface e as legendas geradas estão em **português e inglês**. O idioma vem
+do sistema na primeira abertura e pode ser trocado na barra de cima.
+
+Acrescentar um idioma é copiar `locales/en.yml`, traduzir os valores e abrir um
+PR — sem Rust, sem compilar. A gramática mora no arquivo de tradução, não no
+código: cada idioma escolhe a ordem das palavras e as preposições das legendas.
+Veja **[TRANSLATING.md](TRANSLATING.md)**.
 
 ## Contribuindo
 
