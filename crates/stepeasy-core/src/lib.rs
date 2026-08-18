@@ -19,6 +19,23 @@ pub mod project;
 pub mod render;
 pub mod scope;
 
+/// Utilidades de teste compartilhadas entre os módulos.
+#[cfg(test)]
+pub(crate) mod teste {
+    /// Roda `f` com o idioma fixado.
+    ///
+    /// O idioma ativo do `rust-i18n` é um global do processo e o `cargo test`
+    /// roda em paralelo: sem o mutex, um teste troca o idioma no meio da
+    /// execução do outro e a falha aparece de forma intermitente, longe de
+    /// quem a causou.
+    pub fn com_idioma<R>(locale: &str, f: impl FnOnce() -> R) -> R {
+        static TRAVA: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _guarda = TRAVA.lock().unwrap_or_else(|e| e.into_inner());
+        rust_i18n::set_locale(locale);
+        f()
+    }
+}
+
 pub use error::{Error, Result};
 pub use geometry::{Point, Rect};
 pub use model::{

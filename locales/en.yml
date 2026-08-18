@@ -172,6 +172,18 @@ aviso:
   tema_escuro: Switch to the dark theme
   idioma: Language
 
+borrao_aviso:
+  titulo: Blur does not erase the original
+  texto: >-
+    This recording has %{n} blur annotation(s). They hide the content in what
+    you export, but the .stepeasy package keeps the original screenshot —
+    whoever receives the file can remove the annotation and see underneath.
+  recomendacao: >-
+    To send it to someone, export to HTML or Markdown. Only share the
+    .stepeasy with people who could already see the original screen.
+  entendi: Save anyway
+  nao_mostrar: Do not warn again
+
 tipo_passo:
   clique: click
   duplo_clique: double click

@@ -211,18 +211,7 @@ mod tests {
     use super::*;
     use crate::geometry::Point;
 
-    /// Roda `f` com o idioma fixado.
-    ///
-    /// O idioma ativo do `rust-i18n` e um global do processo, e o `cargo test`
-    /// roda os testes em paralelo: sem o mutex, um teste troca o idioma no meio
-    /// da execucao do outro e a falha aparece de forma intermitente. Foi
-    /// exatamente o que aconteceu na primeira versao deste arquivo.
-    fn com_idioma<R>(locale: &str, f: impl FnOnce() -> R) -> R {
-        static TRAVA: std::sync::Mutex<()> = std::sync::Mutex::new(());
-        let _guarda = TRAVA.lock().unwrap_or_else(|e| e.into_inner());
-        rust_i18n::set_locale(locale);
-        f()
-    }
+    use crate::teste::com_idioma;
 
     fn passo_com_alvo(kind: StepKind, target: UiTarget) -> Step {
         let mut s = Step::new(kind);

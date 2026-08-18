@@ -73,6 +73,10 @@ pub struct App {
     pub dialogo: Option<Dialogo>,
     /// Passa a `true` quando o usuário confirma sair perdendo o trabalho.
     fechar_confirmado: bool,
+    /// `true` quando o usuário já disse que sabe do borrão nesta sessão.
+    pub borrao_avisado: bool,
+    /// Guarda se o salvamento pendente veio de "Salvar como".
+    salvar_com_dialogo: bool,
 }
 
 /// Perguntas que precisam de resposta antes de seguir.
@@ -82,6 +86,8 @@ pub enum Dialogo {
     ConfirmarSaida,
     /// Rascunho de uma sessão anterior encontrado ao abrir.
     RecuperarRascunho,
+    /// Salvando um pacote que contém borrões.
+    BorraoNoPacote,
 }
 
 impl App {
@@ -139,6 +145,8 @@ impl App {
                 .then_some(Dialogo::RecuperarRascunho),
             autosave,
             fechar_confirmado: false,
+            borrao_avisado: false,
+            salvar_com_dialogo: false,
         }
     }
 
@@ -399,7 +407,38 @@ impl App {
         }
     }
 
+    /// Salva, avisando antes se o pacote levar borrões junto.
     pub fn save(&mut self, force_dialog: bool) {
+        // O aviso vem antes de escrever: depois de o arquivo existir, dizer
+        // que ele não está sanitizado já é tarde.
+        if !self.borrao_avisado && self.tem_borrao() {
+            self.salvar_com_dialogo = force_dialog;
+            self.dialogo = Some(Dialogo::BorraoNoPacote);
+            return;
+        }
+        self.salvar_agora(force_dialog);
+    }
+
+    /// Quantos borrões a gravação aberta tem.
+    pub fn borroes(&self) -> usize {
+        self.project
+            .as_ref()
+            .map_or(0, |p| p.recording.blur_count())
+    }
+
+    fn tem_borrao(&self) -> bool {
+        self.borroes() > 0
+    }
+
+    /// Segue com o salvamento que o aviso havia segurado.
+    pub fn salvar_apos_aviso(&mut self, nao_avisar_de_novo: bool) {
+        self.borrao_avisado = nao_avisar_de_novo;
+        self.dialogo = None;
+        let com_dialogo = self.salvar_com_dialogo;
+        self.salvar_agora(com_dialogo);
+    }
+
+    fn salvar_agora(&mut self, force_dialog: bool) {
         let Some(project) = &mut self.project else {
             return;
         };
